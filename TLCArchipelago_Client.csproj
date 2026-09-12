@@ -1,0 +1,72 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>PoPRandomizer</AssemblyName>
+    <RootNamespace>PoPRandomizer</RootNamespace>
+
+    <!-- Stops MSBuild from copying every dependency DLL into your output folder.
+         BepInEx already has all these loaded; you only want YOUR plugin dll to end up
+         in bin\, not fifty copies of assemblies that are already in the game/BepInEx folders. -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+  </PropertyGroup>
+
+  <!-- ===================== CHANGE THIS PATH ===================== -->
+  <!-- Point this at your actual game install folder -->
+  <PropertyGroup>
+    <GameDir>C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\games\Prince of Persia The Lost Crown</GameDir>
+  </PropertyGroup>
+  <!-- =============================================================== -->
+
+  <ItemGroup>
+    <!-- BepInEx core + IL2CPP support, from NuGet -->
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.*" />
+    <PackageReference Include="BepInEx.Core" Version="6.0.0-be.*" />
+    <PackageReference Include="Il2CppInterop.Runtime" Version="1.5.3" />
+    <PackageReference Include="Il2CppInterop.Common" Version="1.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- These come from the game itself, not NuGet — reference the actual files
+         BepInEx auto-generated into BepInEx\interop\ after your first successful launch.
+         All of these need Private=false so they DON'T get copied into your plugin's output
+         (they already exist at runtime in the game's own interop folder). -->
+
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(GameDir)\BepInEx\interop\Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <Reference Include="Il2CppUnityEngine.CoreModule">
+      <HintPath>$(GameDir)\BepInEx\interop\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- The actual game assembly containing Alkawa.Gameplay classes.
+         Check BepInEx\interop\ for the exact filename — it may not be called
+         exactly this, open it in dnSpy to confirm the namespace lives inside it. -->
+    <Reference Include="Il2CppAlkawa">
+      <HintPath>$(GameDir)\BepInEx\interop\Alkawa.Gameplay.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+        <Reference Include="Il2CppAlkawa.Engine">
+      <HintPath>$(GameDir)\BepInEx\interop\Alkawa.Engine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppAlkawa.ObjectRegister">
+      <HintPath>$(GameDir)\BepInEx\interop\Alkawa.ObjectRegister.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Automatically copy your built plugin DLL straight into the game's plugins folder
+       every time you build, so you don't have to do it by hand each time. -->
+  <Target Name="CopyToPlugins" AfterTargets="Build">
+    <MakeDir Directories="$(GameDir)\BepInEx\plugins\PoPRandomizer" Condition="!Exists('$(GameDir)\BepInEx\plugins\PoPRandomizer')" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\BepInEx\plugins\PoPRandomizer\" />
+  </Target>
+
+</Project>

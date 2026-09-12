@@ -1,0 +1,939 @@
+using System;
+
+namespace Alkawa.Gameplay
+{
+	// Token: 0x02000725 RID: 1829
+	public enum EItemType
+	{
+		// Token: 0x04004B86 RID: 19334
+		INVALID = -1,
+		// Token: 0x04004B87 RID: 19335
+		None,
+		// Token: 0x04004B88 RID: 19336
+		Arrow,
+		// Token: 0x04004B89 RID: 19337
+		Crystal,
+		// Token: 0x04004B8A RID: 19338
+		HealingPotion,
+		// Token: 0x04004B8B RID: 19339
+		HaomaFragment,
+		// Token: 0x04004B8C RID: 19340
+		DamascusOre,
+		// Token: 0x04004B8D RID: 19341
+		CollectorToken,
+		// Token: 0x04004B8E RID: 19342
+		SmallHealthDrop,
+		// Token: 0x04004B8F RID: 19343
+		MediumHealthDrop,
+		// Token: 0x04004B90 RID: 19344
+		BigHealthDrop,
+		// Token: 0x04004B91 RID: 19345
+		Loot_Reviver,
+		// Token: 0x04004B92 RID: 19346
+		VisionSlots,
+		// Token: 0x04004B93 RID: 19347
+		ProgressionHint,
+		// Token: 0x04004B94 RID: 19348
+		Fresco_01_FullHaoma,
+		// Token: 0x04004B95 RID: 19349
+		Fresco_02_DauntlessAmulet,
+		// Token: 0x04004B96 RID: 19350
+		Fresco_03_HaomaFragment,
+		// Token: 0x04004B97 RID: 19351
+		Fresco_04_FlameAmulet,
+		// Token: 0x04004B98 RID: 19352
+		Fresco_05_Seed,
+		// Token: 0x04004B99 RID: 19353
+		Fresco_06_HaomaFragment,
+		// Token: 0x04004B9A RID: 19354
+		Fresco_07_DamascusOre,
+		// Token: 0x04004B9B RID: 19355
+		Shield_DEPRECATED,
+		// Token: 0x04004B9C RID: 19356
+		Bow_DEPRECATED,
+		// Token: 0x04004B9D RID: 19357
+		Chakram_DEPRECATED,
+		// Token: 0x04004B9E RID: 19358
+		ChakramUpgrade1_DEPRECATED = 60,
+		// Token: 0x04004B9F RID: 19359
+		ChakramUpgrade2_DEPRECATED,
+		// Token: 0x04004BA0 RID: 19360
+		ChakramUpgrade3_DEPRECATED,
+		// Token: 0x04004BA1 RID: 19361
+		ChakramUpgrade4_DEPRECATED,
+		// Token: 0x04004BA2 RID: 19362
+		SeedOfKnowledge = 100,
+		// Token: 0x04004BA3 RID: 19363
+		FocusGauge_LevelMaxIncrease = 149,
+		// Token: 0x04004BA4 RID: 19364
+		FocusAbility_Maelstrom,
+		// Token: 0x04004BA5 RID: 19365
+		FocusAbility_WindSlash,
+		// Token: 0x04004BA6 RID: 19366
+		FocusAbility_Armor,
+		// Token: 0x04004BA7 RID: 19367
+		FocusAbility_Heal,
+		// Token: 0x04004BA8 RID: 19368
+		FocusAbility_SuperShot_DEPRECATED,
+		// Token: 0x04004BA9 RID: 19369
+		FocusAbility_AntiAir,
+		// Token: 0x04004BAA RID: 19370
+		FocusAbility_PiercingAttack,
+		// Token: 0x04004BAB RID: 19371
+		FocusAbility_GroundSlam,
+		// Token: 0x04004BAC RID: 19372
+		FocusAbility_LifeDrain_DEPRECATED,
+		// Token: 0x04004BAD RID: 19373
+		FocusAbility_SuperShotLaser,
+		// Token: 0x04004BAE RID: 19374
+		FocusAbility_SuperChargedAttack,
+		// Token: 0x04004BAF RID: 19375
+		FocusAbility_FullCounter,
+		// Token: 0x04004BB0 RID: 19376
+		MinimapEye = 250,
+		// Token: 0x04004BB1 RID: 19377
+		Lantern,
+		// Token: 0x04004BB2 RID: 19378
+		GENERERATED_ID_RANGE_MIN = 1000,
+		// Token: 0x04004BB3 RID: 19379
+		QuestItem_ArchivesKey = 200,
+		// Token: 0x04004BB4 RID: 19380
+		QuestItem_KahevaRawOre,
+		// Token: 0x04004BB5 RID: 19381
+		QuestItem_FrescoElement,
+		// Token: 0x04004BB6 RID: 19382
+		QuestItem_ElevatorVIPKey = 204,
+		// Token: 0x04004BB7 RID: 19383
+		QuestItem_DogTagLostWarrior_01,
+		// Token: 0x04004BB8 RID: 19384
+		QuestItem_DogTagLostWarrior_02,
+		// Token: 0x04004BB9 RID: 19385
+		QuestItem_DogTagLostWarrior_03,
+		// Token: 0x04004BBA RID: 19386
+		QuestItem_DogTagLostWarrior_04,
+		// Token: 0x04004BBB RID: 19387
+		QuestItem_DogTagLostWarrior_05,
+		// Token: 0x04004BBC RID: 19388
+		QuestItem_DogTagLostWarrior_06,
+		// Token: 0x04004BBD RID: 19389
+		QuestItem_DogTagLostWarrior_07,
+		// Token: 0x04004BBE RID: 19390
+		QuestItem_DogTagLostWarrior_08,
+		// Token: 0x04004BBF RID: 19391
+		QuestItem_DogTagLostWarrior_Nojan,
+		// Token: 0x04004BC0 RID: 19392
+		QuestItem_DogTagLostWarrior_Ardashir = 216,
+		// Token: 0x04004BC1 RID: 19393
+		QuestItem_SteleEngraverItem_DEPRECATED,
+		// Token: 0x04004BC2 RID: 19394
+		QuestItem_PrisonerItem_DEPRECATED,
+		// Token: 0x04004BC3 RID: 19395
+		QuestItem_AzdahaStoneA_DEPRECATED,
+		// Token: 0x04004BC4 RID: 19396
+		QuestItem_AzdahaStoneB_DEPRECATED,
+		// Token: 0x04004BC5 RID: 19397
+		QuestItem_CannonBall,
+		// Token: 0x04004BC6 RID: 19398
+		QuestItem_Parrot,
+		// Token: 0x04004BC7 RID: 19399
+		QuestItem_ErlikTusk_DEPRECATED,
+		// Token: 0x04004BC8 RID: 19400
+		QuestItem_KingsKey,
+		// Token: 0x04004BC9 RID: 19401
+		QuestItem_MagicalArrow,
+		// Token: 0x04004BCA RID: 19402
+		QuestItem_KeeperXerses = 1041,
+		// Token: 0x04004BCB RID: 19403
+		KeyItem_ThomyrisScarf = 252,
+		// Token: 0x04004BCC RID: 19404
+		KeyItem_WarriorNecklace = 1028,
+		// Token: 0x04004BCD RID: 19405
+		LoreItem_01_FirstClayTablet = 1001,
+		// Token: 0x04004BCE RID: 19406
+		LoreItem_02_MissionOrders_DEPRECATED,
+		// Token: 0x04004BCF RID: 19407
+		LoreItem_03_NoticeOfDebt_DEPRECATED,
+		// Token: 0x04004BD0 RID: 19408
+		LoreItem_04_ArchiveScroll,
+		// Token: 0x04004BD1 RID: 19409
+		LoreItem_05_PrisonerCarvedStatue,
+		// Token: 0x04004BD2 RID: 19410
+		LoreItem_06_StatuetteOfVayu,
+		// Token: 0x04004BD3 RID: 19411
+		LoreItem_07_GildedBracelet,
+		// Token: 0x04004BD4 RID: 19412
+		LoreItem_08_PersianMilitaryInsignia,
+		// Token: 0x04004BD5 RID: 19413
+		LoreItem_09_ChildToy,
+		// Token: 0x04004BD6 RID: 19414
+		LoreItem_10_TarnishedCoin,
+		// Token: 0x04004BD7 RID: 19415
+		LoreItem_11_Diadem,
+		// Token: 0x04004BD8 RID: 19416
+		LoreItem_12_StatuetteOfQueenAtossa,
+		// Token: 0x04004BD9 RID: 19417
+		LoreItem_13_PersianTale,
+		// Token: 0x04004BDA RID: 19418
+		LoreItem_14_ProclamationTreaty,
+		// Token: 0x04004BDB RID: 19419
+		LoreItem_15_SacredObject,
+		// Token: 0x04004BDC RID: 19420
+		LoreItem_16_ArtisanToolStoneCarvers_DEPRECATED,
+		// Token: 0x04004BDD RID: 19421
+		LoreItem_17_ArtisanToolCarpetWeavers,
+		// Token: 0x04004BDE RID: 19422
+		LoreItem_18_ArchitecturalDrawings,
+		// Token: 0x04004BDF RID: 19423
+		LoreItem_19_RustedHook,
+		// Token: 0x04004BE0 RID: 19424
+		LoreItem_20_CharredBranch_DEPRECATED,
+		// Token: 0x04004BE1 RID: 19425
+		LoreItem_21_Mirror,
+		// Token: 0x04004BE2 RID: 19426
+		LoreItem_22_BrokenSwordHilt_DEPRECATED,
+		// Token: 0x04004BE3 RID: 19427
+		LoreItem_23_DiscardedArrowHead_DEPRECATED,
+		// Token: 0x04004BE4 RID: 19428
+		LoreItem_24_ErlikTusk,
+		// Token: 0x04004BE5 RID: 19429
+		LoreItem_25_AzdhahaTooth,
+		// Token: 0x04004BE6 RID: 19430
+		LoreItem_26_PrisonerChains,
+		// Token: 0x04004BE7 RID: 19431
+		LoreItem_27_EffigyJewel_DEPRECATED,
+		// Token: 0x04004BE8 RID: 19432
+		LoreItem_28_AstronomicalMeschanism = 1029,
+		// Token: 0x04004BE9 RID: 19433
+		LoreItem_29_GeometricalFormulaCreator,
+		// Token: 0x04004BEA RID: 19434
+		LoreItem_30_RoyalDecree,
+		// Token: 0x04004BEB RID: 19435
+		LoreItem_31_RustedSword_DEPRECATED,
+		// Token: 0x04004BEC RID: 19436
+		LoreItem_32_TheCombOfAPrincess,
+		// Token: 0x04004BED RID: 19437
+		LoreItem_33_NoteOnABody_DEPRECATED,
+		// Token: 0x04004BEE RID: 19438
+		LoreItem_34_MemoryFragment,
+		// Token: 0x04004BEF RID: 19439
+		LoreItem_35_CursedObject,
+		// Token: 0x04004BF0 RID: 19440
+		LoreItem_36_ObjectFoundinAzhdahaLair,
+		// Token: 0x04004BF1 RID: 19441
+		LoreItem_37_DroppedLocket,
+		// Token: 0x04004BF2 RID: 19442
+		LoreItem_38_NoteBeneathBatteredTalisman,
+		// Token: 0x04004BF3 RID: 19443
+		LoreItem_39_SecondClayTablet,
+		// Token: 0x04004BF4 RID: 19444
+		LoreItem_40_FoundOnRadjen = 1042,
+		// Token: 0x04004BF5 RID: 19445
+		LoreItem_41_VahramChildItem = 1045,
+		// Token: 0x04004BF6 RID: 19446
+		LoreItem_42_Placeholder_01,
+		// Token: 0x04004BF7 RID: 19447
+		LoreItem_43_Placeholder_02,
+		// Token: 0x04004BF8 RID: 19448
+		LoreItem_44_ScrollBlessedByTheSymorgh,
+		// Token: 0x04004BF9 RID: 19449
+		LoreItem_45_NurseryRhymeOnAToy,
+		// Token: 0x04004BFA RID: 19450
+		LoreItem_46_LastDayAtWork,
+		// Token: 0x04004BFB RID: 19451
+		LoreItem_47_Missive_01,
+		// Token: 0x04004BFC RID: 19452
+		LoreItem_48_Missive_02,
+		// Token: 0x04004BFD RID: 19453
+		LoreItem_49_Missive_03,
+		// Token: 0x04004BFE RID: 19454
+		LoreItem_50_Missive_04,
+		// Token: 0x04004BFF RID: 19455
+		LoreItem_51_LetterfromtheKingDariustoCaptainIrisKaloxilos,
+		// Token: 0x04004C00 RID: 19456
+		LoreItem_52_PiratesSeaShanty,
+		// Token: 0x04004C01 RID: 19457
+		LoreItem_53_TheCrowningofaDivineKing,
+		// Token: 0x04004C02 RID: 19458
+		LoreItem_54_TheEmbraceofAthra,
+		// Token: 0x04004C03 RID: 19459
+		LoreItem_55_TheFallofTheHyrcanianTribe,
+		// Token: 0x04004C04 RID: 19460
+		LoreItem_56_TheFrozenTomb,
+		// Token: 0x04004C05 RID: 19461
+		LoreItem_57_TheHunterAndTheManEater,
+		// Token: 0x04004C06 RID: 19462
+		LoreItem_58_TheLegendofTheSnakeTheBirdandTheSands,
+		// Token: 0x04004C07 RID: 19463
+		LoreItem_59_01BotanyLogsOfCyrusAfshin,
+		// Token: 0x04004C08 RID: 19464
+		LoreItem_60_02BotanyLogsOfCyrusAfshin_DEPRECATED,
+		// Token: 0x04004C09 RID: 19465
+		LoreItem_61_03BotanyLogsOfCyrusAfshin,
+		// Token: 0x04004C0A RID: 19466
+		LoreItem_62_TheThirdSon,
+		// Token: 0x04004C0B RID: 19467
+		LoreItem_63_TheZoroastrianDivineCode_DEPRECATED,
+		// Token: 0x04004C0C RID: 19468
+		LoreItem_64_01AlchemistDiary,
+		// Token: 0x04004C0D RID: 19469
+		LoreItem_65_02AlchemistDiary_DEPRECATED,
+		// Token: 0x04004C0E RID: 19470
+		LoreItem_66_03AlchemistDiary,
+		// Token: 0x04004C0F RID: 19471
+		LoreItem_67_04AlchemistDiary,
+		// Token: 0x04004C10 RID: 19472
+		LoreItem_68_05AlchemistDiary_DEPRECATED,
+		// Token: 0x04004C11 RID: 19473
+		LoreItem_69_06AlchemistDiary_DEPRECATED,
+		// Token: 0x04004C12 RID: 19474
+		LoreItem_70_TheArchitectAndTheKing,
+		// Token: 0x04004C13 RID: 19475
+		LoreItem_71_ThePathOfTheHero,
+		// Token: 0x04004C14 RID: 19476
+		LoreItem_72_AmongTheWakWaks_DEPRECATED,
+		// Token: 0x04004C15 RID: 19477
+		LoreItem_73_TheCommonerAndTheKing,
+		// Token: 0x04004C16 RID: 19478
+		LoreItem_74_TheLionandTheViper,
+		// Token: 0x04004C17 RID: 19479
+		LoreItem_75_LegendFromThePit,
+		// Token: 0x04004C18 RID: 19480
+		LoreItem_76_MastersInstructions,
+		// Token: 0x04004C19 RID: 19481
+		GearUpgrade_PotionCount_PackShop1 = 23,
+		// Token: 0x04004C1A RID: 19482
+		GearUpgrade_PotionCount_PackShop2,
+		// Token: 0x04004C1B RID: 19483
+		GearUpgrade_PotionCount_PackShop3,
+		// Token: 0x04004C1C RID: 19484
+		GearUpgrade_PotionHealingEffect_PackShop1,
+		// Token: 0x04004C1D RID: 19485
+		GearUpgrade_PotionHealingEffect_PackShop2,
+		// Token: 0x04004C1E RID: 19486
+		GearUpgrade_PotionHealingEffect_PackShop3,
+		// Token: 0x04004C1F RID: 19487
+		GearUpgrade_SwordPlus1 = 30,
+		// Token: 0x04004C20 RID: 19488
+		GearUpgrade_SwordPlus2,
+		// Token: 0x04004C21 RID: 19489
+		GearUpgrade_SwordPlus3,
+		// Token: 0x04004C22 RID: 19490
+		GearUpgrade_SwordPlus4,
+		// Token: 0x04004C23 RID: 19491
+		GearUpgrade_BowPlus1 = 40,
+		// Token: 0x04004C24 RID: 19492
+		GearUpgrade_BowPlus2,
+		// Token: 0x04004C25 RID: 19493
+		GearUpgrade_BowPlus3,
+		// Token: 0x04004C26 RID: 19494
+		GearUpgrade_BowPlus4,
+		// Token: 0x04004C27 RID: 19495
+		GearUpgrade_QuiverPlus1 = 50,
+		// Token: 0x04004C28 RID: 19496
+		GearUpgrade_QuiverPlus2,
+		// Token: 0x04004C29 RID: 19497
+		GearUpgrade_QuiverPlus3,
+		// Token: 0x04004C2A RID: 19498
+		GearUpgrade_QuiverPlus4,
+		// Token: 0x04004C2B RID: 19499
+		GearUpgrade_VisionPackChest = 70,
+		// Token: 0x04004C2C RID: 19500
+		GearUpgrade_VisionPackShop1,
+		// Token: 0x04004C2D RID: 19501
+		GearUpgrade_VisionPackShop2,
+		// Token: 0x04004C2E RID: 19502
+		GearUpgrade_VisionPackShop3,
+		// Token: 0x04004C2F RID: 19503
+		GearUpgrade_VisionPackShop4,
+		// Token: 0x04004C30 RID: 19504
+		GearUpgrade_PotionCount_PackChest = 1043,
+		// Token: 0x04004C31 RID: 19505
+		GearUpgrade_PotionHealingEffect_PackChest,
+		// Token: 0x04004C32 RID: 19506
+		WakWakHead_00_MamaSomaTree = 79,
+		// Token: 0x04004C33 RID: 19507
+		WakWakHead_01_Kamil,
+		// Token: 0x04004C34 RID: 19508
+		WakWakHead_02_Kamra_DEPRECATED,
+		// Token: 0x04004C35 RID: 19509
+		WakWakHead_03_Kamri_DEPRECATED,
+		// Token: 0x04004C36 RID: 19510
+		WakWakHead_04_Kalux,
+		// Token: 0x04004C37 RID: 19511
+		WakWakHead_05_Karim,
+		// Token: 0x04004C38 RID: 19512
+		WakWakHead_06_Kaname,
+		// Token: 0x04004C39 RID: 19513
+		WakWakHead_07_Kaya,
+		// Token: 0x04004C3A RID: 19514
+		WakWakHead_08_Kamya,
+		// Token: 0x04004C3B RID: 19515
+		WakWakHead_09_Kazra,
+		// Token: 0x04004C3C RID: 19516
+		StoneOfKnowledge_BowMultiShot = 101,
+		// Token: 0x04004C3D RID: 19517
+		StoneOfKnowledge_BowFireArrow,
+		// Token: 0x04004C3E RID: 19518
+		StoneOfKnowledge_TeleportShockWave,
+		// Token: 0x04004C3F RID: 19519
+		StoneOfKnowledge_TeleportRay,
+		// Token: 0x04004C40 RID: 19520
+		StoneOfKnowledge_Life,
+		// Token: 0x04004C41 RID: 19521
+		StoneOfKnowledge_Brave,
+		// Token: 0x04004C42 RID: 19522
+		StoneOfKnowledge_DareDevil,
+		// Token: 0x04004C43 RID: 19523
+		StoneOfKnowledge_Safety,
+		// Token: 0x04004C44 RID: 19524
+		StoneOfKnowledge_BackStab_DEPRECATED,
+		// Token: 0x04004C45 RID: 19525
+		StoneOfKnowledge_Celestial,
+		// Token: 0x04004C46 RID: 19526
+		StoneOfKnowledge_Critical_DEPRECATED,
+		// Token: 0x04004C47 RID: 19527
+		StoneOfKnowledge_Hawk,
+		// Token: 0x04004C48 RID: 19528
+		StoneOfKnowledge_Phoenix,
+		// Token: 0x04004C49 RID: 19529
+		StoneOfKnowledge_FocusExtendedHits_DEPRECATED,
+		// Token: 0x04004C4A RID: 19530
+		StoneOfKnowledge_Focus,
+		// Token: 0x04004C4B RID: 19531
+		StoneOfKnowledge_Haste_DEPRECATED,
+		// Token: 0x04004C4C RID: 19532
+		StoneOfKnowledge_Prayer,
+		// Token: 0x04004C4D RID: 19533
+		StoneOfKnowledge_Monk,
+		// Token: 0x04004C4E RID: 19534
+		StoneOfKnowledge_Tower,
+		// Token: 0x04004C4F RID: 19535
+		StoneOfKnowledge_Finisher,
+		// Token: 0x04004C50 RID: 19536
+		StoneOfKnowledge_HealingPotion_DEPRECATED,
+		// Token: 0x04004C51 RID: 19537
+		StoneOfKnowledge_Knight,
+		// Token: 0x04004C52 RID: 19538
+		StoneOfKnowledge_Dauntless,
+		// Token: 0x04004C53 RID: 19539
+		StoneOfKnowledge_Resilience_DEPRECATED,
+		// Token: 0x04004C54 RID: 19540
+		StoneOfKnowledge_EvilEye,
+		// Token: 0x04004C55 RID: 19541
+		StoneOfKnowledge_Steel,
+		// Token: 0x04004C56 RID: 19542
+		StoneOfKnowledge_CounterAttack,
+		// Token: 0x04004C57 RID: 19543
+		StoneOfKnowledge_Wealth,
+		// Token: 0x04004C58 RID: 19544
+		StoneOfKnowledge_Magnet,
+		// Token: 0x04004C59 RID: 19545
+		StoneOfKnowledge_Poison,
+		// Token: 0x04004C5A RID: 19546
+		StoneOfKnowledge_Flame,
+		// Token: 0x04004C5B RID: 19547
+		StoneOfKnowledge_Treasure,
+		// Token: 0x04004C5C RID: 19548
+		StoneOfKnowledge_Hunter,
+		// Token: 0x04004C5D RID: 19549
+		StoneOfKnowledge_Life2,
+		// Token: 0x04004C5E RID: 19550
+		StoneOfKnowledge_Life3,
+		// Token: 0x04004C5F RID: 19551
+		StoneOfKnowledge_DodgeMaster,
+		// Token: 0x04004C60 RID: 19552
+		StoneOfKnowledge_Vortex_DEPRECATED,
+		// Token: 0x04004C61 RID: 19553
+		StoneOfKnowledge_BowMultiShot2,
+		// Token: 0x04004C62 RID: 19554
+		StoneOfKnowledge_BowMultiShot3,
+		// Token: 0x04004C63 RID: 19555
+		StoneOfKnowledge_BowFireArrow2,
+		// Token: 0x04004C64 RID: 19556
+		StoneOfKnowledge_BowFireArrow3,
+		// Token: 0x04004C65 RID: 19557
+		StoneOfKnowledge_TeleportShockWave2,
+		// Token: 0x04004C66 RID: 19558
+		StoneOfKnowledge_TeleportShockWave3,
+		// Token: 0x04004C67 RID: 19559
+		StoneOfKnowledge_TeleportRay2,
+		// Token: 0x04004C68 RID: 19560
+		StoneOfKnowledge_TeleportRay3,
+		// Token: 0x04004C69 RID: 19561
+		StoneOfKnowledge_Hunter2,
+		// Token: 0x04004C6A RID: 19562
+		StoneOfKnowledge_Hunter3,
+		// Token: 0x04004C6B RID: 19563
+		StoneOfKnowledge_ExtendedHits,
+		// Token: 0x04004C6C RID: 19564
+		StoneOfKnowledge_DodgeMaster2 = 400,
+		// Token: 0x04004C6D RID: 19565
+		StoneOfKnowledge_DodgeMaster3,
+		// Token: 0x04004C6E RID: 19566
+		StoneOfKnowledge_Brave2,
+		// Token: 0x04004C6F RID: 19567
+		StoneOfKnowledge_Brave3,
+		// Token: 0x04004C70 RID: 19568
+		StoneOfKnowledge_DareDevil2,
+		// Token: 0x04004C71 RID: 19569
+		StoneOfKnowledge_DareDevil3,
+		// Token: 0x04004C72 RID: 19570
+		StoneOfKnowledge_Safety2,
+		// Token: 0x04004C73 RID: 19571
+		StoneOfKnowledge_Safety3,
+		// Token: 0x04004C74 RID: 19572
+		StoneOfKnowledge_Celestial2,
+		// Token: 0x04004C75 RID: 19573
+		StoneOfKnowledge_Celestial3,
+		// Token: 0x04004C76 RID: 19574
+		StoneOfKnowledge_Hawk2,
+		// Token: 0x04004C77 RID: 19575
+		StoneOfKnowledge_Hawk3,
+		// Token: 0x04004C78 RID: 19576
+		StoneOfKnowledge_Focus2,
+		// Token: 0x04004C79 RID: 19577
+		StoneOfKnowledge_Focus3,
+		// Token: 0x04004C7A RID: 19578
+		StoneOfKnowledge_FocusExtendedHits2_DEPRECATED,
+		// Token: 0x04004C7B RID: 19579
+		StoneOfKnowledge_FocusExtendedHits3_DEPRECATED,
+		// Token: 0x04004C7C RID: 19580
+		StoneOfKnowledge_Tower2,
+		// Token: 0x04004C7D RID: 19581
+		StoneOfKnowledge_Tower3,
+		// Token: 0x04004C7E RID: 19582
+		StoneOfKnowledge_Finisher2,
+		// Token: 0x04004C7F RID: 19583
+		StoneOfKnowledge_Finisher3,
+		// Token: 0x04004C80 RID: 19584
+		StoneOfKnowledge_Knight2,
+		// Token: 0x04004C81 RID: 19585
+		StoneOfKnowledge_Knight3,
+		// Token: 0x04004C82 RID: 19586
+		StoneOfKnowledge_Dauntless2,
+		// Token: 0x04004C83 RID: 19587
+		StoneOfKnowledge_Dauntless3,
+		// Token: 0x04004C84 RID: 19588
+		StoneOfKnowledge_Resilience2_DEPRECATED,
+		// Token: 0x04004C85 RID: 19589
+		StoneOfKnowledge_Resilience3_DEPRECATED,
+		// Token: 0x04004C86 RID: 19590
+		StoneOfKnowledge_EvilEye2,
+		// Token: 0x04004C87 RID: 19591
+		StoneOfKnowledge_EvilEye3,
+		// Token: 0x04004C88 RID: 19592
+		StoneOfKnowledge_CounterAttack2,
+		// Token: 0x04004C89 RID: 19593
+		StoneOfKnowledge_CounterAttack3,
+		// Token: 0x04004C8A RID: 19594
+		StoneOfKnowledge_Wealth2,
+		// Token: 0x04004C8B RID: 19595
+		StoneOfKnowledge_Wealth3,
+		// Token: 0x04004C8C RID: 19596
+		StoneOfKnowledge_Steel2,
+		// Token: 0x04004C8D RID: 19597
+		StoneOfKnowledge_Steel3,
+		// Token: 0x04004C8E RID: 19598
+		StoneOfKnowledge_Poison2,
+		// Token: 0x04004C8F RID: 19599
+		StoneOfKnowledge_Poison3,
+		// Token: 0x04004C90 RID: 19600
+		StoneOfKnowledge_Flame2,
+		// Token: 0x04004C91 RID: 19601
+		StoneOfKnowledge_Flame3,
+		// Token: 0x04004C92 RID: 19602
+		StoneOfKnowledge_Phoenix2,
+		// Token: 0x04004C93 RID: 19603
+		StoneOfKnowledge_Phoenix3,
+		// Token: 0x04004C94 RID: 19604
+		StoneOfKnowledge_Prayer2,
+		// Token: 0x04004C95 RID: 19605
+		StoneOfKnowledge_Prayer3,
+		// Token: 0x04004C96 RID: 19606
+		StoneOfKnowledge_ExtendedHits2,
+		// Token: 0x04004C97 RID: 19607
+		StoneOfKnowledge_ExtendedHits3,
+		// Token: 0x04004C98 RID: 19608
+		StoneOfKnowledge_ShieldOfMithra,
+		// Token: 0x04004C99 RID: 19609
+		StoneOfKnowledge_DarkEye,
+		// Token: 0x04004C9A RID: 19610
+		StoneOfKnowledge_ChakramTeleport_DEPRECATED,
+		// Token: 0x04004C9B RID: 19611
+		StoneOfKnowledge_ChakramVortex,
+		// Token: 0x04004C9C RID: 19612
+		StoneOfKnowledge_RiddleStone_DEPRECATED,
+		// Token: 0x04004C9D RID: 19613
+		StoneOfKnowledge_FrozenStar_DEPRECATED,
+		// Token: 0x04004C9E RID: 19614
+		StoneOfKnowledge_Void,
+		// Token: 0x04004C9F RID: 19615
+		StoneOfKnowledge_Void2,
+		// Token: 0x04004CA0 RID: 19616
+		StoneOfKnowledge_Void3,
+		// Token: 0x04004CA1 RID: 19617
+		StoneOfKnowledge_Explosive,
+		// Token: 0x04004CA2 RID: 19618
+		StoneOfKnowledge_Explosive2,
+		// Token: 0x04004CA3 RID: 19619
+		StoneOfKnowledge_Explosive3,
+		// Token: 0x04004CA4 RID: 19620
+		StoneOfKnowledge_BeeEater,
+		// Token: 0x04004CA5 RID: 19621
+		StoneOfKnowledge_ChakramVortex2,
+		// Token: 0x04004CA6 RID: 19622
+		StoneOfKnowledge_ChakramVortex3,
+		// Token: 0x04004CA7 RID: 19623
+		StoneOfKnowledge_ShieldOfMithra2,
+		// Token: 0x04004CA8 RID: 19624
+		StoneOfKnowledge_ShieldOfMithra3,
+		// Token: 0x04004CA9 RID: 19625
+		StoneOfKnowledge_Thunder,
+		// Token: 0x04004CAA RID: 19626
+		StoneOfKnowledge_Thunder2,
+		// Token: 0x04004CAB RID: 19627
+		StoneOfKnowledge_Thunder3,
+		// Token: 0x04004CAC RID: 19628
+		StoneOfKnowledge_Ice,
+		// Token: 0x04004CAD RID: 19629
+		StoneOfKnowledge_Ice2,
+		// Token: 0x04004CAE RID: 19630
+		StoneOfKnowledge_Ice3,
+		// Token: 0x04004CAF RID: 19631
+		SubMap_CIT_OLD = 300,
+		// Token: 0x04004CB0 RID: 19632
+		SubMap_CIT_LOW,
+		// Token: 0x04004CB1 RID: 19633
+		SubMap_CIT_UPP,
+		// Token: 0x04004CB2 RID: 19634
+		SubMap_CIT_DEP_Part1,
+		// Token: 0x04004CB3 RID: 19635
+		SubMap_SKY_ROY,
+		// Token: 0x04004CB4 RID: 19636
+		SubMap_SKY_GAR,
+		// Token: 0x04004CB5 RID: 19637
+		SubMap_HYR_AUT,
+		// Token: 0x04004CB6 RID: 19638
+		SubMap_HYR_HID,
+		// Token: 0x04004CB7 RID: 19639
+		SubMap_SAC_SAC_Part1,
+		// Token: 0x04004CB8 RID: 19640
+		SubMap_END_PIT,
+		// Token: 0x04004CB9 RID: 19641
+		SubMap_VAL_SUN,
+		// Token: 0x04004CBA RID: 19642
+		SubMap_VAL_RAG,
+		// Token: 0x04004CBB RID: 19643
+		SubMap_NEC_TOW,
+		// Token: 0x04004CBC RID: 19644
+		SubMap_CRO_CRO,
+		// Token: 0x04004CBD RID: 19645
+		SubMap_HYR_SOM,
+		// Token: 0x04004CBE RID: 19646
+		SubMap_CIT_DEP_Part2,
+		// Token: 0x04004CBF RID: 19647
+		SubMap_HYR_AUT_Part2_DEPRECATED,
+		// Token: 0x04004CC0 RID: 19648
+		SubMap_SAC_SAC_Part2,
+		// Token: 0x04004CC1 RID: 19649
+		SubMap_CIT_LOW_Part2,
+		// Token: 0x04004CC2 RID: 19650
+		EnemyWeapon_Spears = 501,
+		// Token: 0x04004CC3 RID: 19651
+		Skin_Default_Chroma1 = 701,
+		// Token: 0x04004CC4 RID: 19652
+		Skin_Default_Chroma2,
+		// Token: 0x04004CC5 RID: 19653
+		Skin_Default_Chroma3,
+		// Token: 0x04004CC6 RID: 19654
+		Skin_Default_Chroma4,
+		// Token: 0x04004CC7 RID: 19655
+		Skin_Default_Chroma5,
+		// Token: 0x04004CC8 RID: 19656
+		Skin_CU3_Yakuza_Chroma1 = 1901,
+		// Token: 0x04004CC9 RID: 19657
+		Skin_CU3_Yakuza_Chroma2,
+		// Token: 0x04004CCA RID: 19658
+		Skin_CU3_Yakuza_Chroma3,
+		// Token: 0x04004CCB RID: 19659
+		Skin_CU3_Yakuza_Chroma4,
+		// Token: 0x04004CCC RID: 19660
+		DLC_StoneOfKnowledge_SuperArrow = 2000,
+		// Token: 0x04004CCD RID: 19661
+		DLC_StoneOfKnowledge_RefillArrow = 2004,
+		// Token: 0x04004CCE RID: 19662
+		DLC_StoneOfKnowledge_FireStormCharge = 2002,
+		// Token: 0x04004CCF RID: 19663
+		DLC_StoneOfKnowledge_FrozenShield,
+		// Token: 0x04004CD0 RID: 19664
+		DLC_StoneOfKnowledge_RevengeCounter = 2001,
+		// Token: 0x04004CD1 RID: 19665
+		DLC_StoneOfKnowledge_FastFallMine = 2005,
+		// Token: 0x04004CD2 RID: 19666
+		DLC_StoneOfKnowledge_ChakramLifeSteal,
+		// Token: 0x04004CD3 RID: 19667
+		DLC_Skin_SarRadjen,
+		// Token: 0x04004CD4 RID: 19668
+		DLC_TreasureMap_CIT_LOW_Part1 = 2110,
+		// Token: 0x04004CD5 RID: 19669
+		DLC_TreasureMap_CIT_LOW_Part2_OldRoyalRoad,
+		// Token: 0x04004CD6 RID: 19670
+		DLC_TreasureMap_HYR_AUT,
+		// Token: 0x04004CD7 RID: 19671
+		DLC_TreasureMap_HYR_HID,
+		// Token: 0x04004CD8 RID: 19672
+		DLC_TreasureMap_HYR_SOM,
+		// Token: 0x04004CD9 RID: 19673
+		DLC_TreasureMap_CIT_DEP_Part1,
+		// Token: 0x04004CDA RID: 19674
+		DLC_TreasureMap_CIT_DEP_Part2_Catacombs,
+		// Token: 0x04004CDB RID: 19675
+		DLC_TreasureMap_CIT_UPP,
+		// Token: 0x04004CDC RID: 19676
+		DLC_TreasureMap_SAC_SAC_Part1,
+		// Token: 0x04004CDD RID: 19677
+		DLC_TreasureMap_SAC_SAC_Part2_Temple,
+		// Token: 0x04004CDE RID: 19678
+		DLC_TreasureMap_VAL_SUN,
+		// Token: 0x04004CDF RID: 19679
+		DLC_TreasureMap_VAL_RAG,
+		// Token: 0x04004CE0 RID: 19680
+		DLC_TreasureMap_END_PIT,
+		// Token: 0x04004CE1 RID: 19681
+		DLC_TreasureMap_NEC_TOW,
+		// Token: 0x04004CE2 RID: 19682
+		DLC_LoreItemsMap = 2200,
+		// Token: 0x04004CE3 RID: 19683
+		DLC_WakWakTravelKeyItem = 2300,
+		// Token: 0x04004CE4 RID: 19684
+		DLC_Radjen_MemoryFragment_01 = 2401,
+		// Token: 0x04004CE5 RID: 19685
+		DLC_Radjen_MemoryFragment_02,
+		// Token: 0x04004CE6 RID: 19686
+		DLC_Radjen_MemoryFragment_03,
+		// Token: 0x04004CE7 RID: 19687
+		DLC_Radjen_MemoryFragment_04,
+		// Token: 0x04004CE8 RID: 19688
+		DLC_Radjen_MemoryFragment_05,
+		// Token: 0x04004CE9 RID: 19689
+		DLC_Radjen_MemoryFragment_06,
+		// Token: 0x04004CEA RID: 19690
+		DLC_Radjen_MemoryFragment_07,
+		// Token: 0x04004CEB RID: 19691
+		DLC_Radjen_MemoryFragment_08,
+		// Token: 0x04004CEC RID: 19692
+		DLC_Radjen_MemoryFragment_09,
+		// Token: 0x04004CED RID: 19693
+		DLC_Radjen_MemoryFragment_10,
+		// Token: 0x04004CEE RID: 19694
+		DLC_Radjen_Memory_11_Video_KushanCaravan,
+		// Token: 0x04004CEF RID: 19695
+		DLC_Radjen_Memory_12_Video_MotherDies,
+		// Token: 0x04004CF0 RID: 19696
+		DLC_Radjen_Memory_13_Video_DuelToTheDeath,
+		// Token: 0x04004CF1 RID: 19697
+		DLC_Radjen_Memory_14_Parallax_BeforeKidnapping,
+		// Token: 0x04004CF2 RID: 19698
+		DLC_Radjen_Memory_15_Parallax_RadjenInduction,
+		// Token: 0x04004CF3 RID: 19699
+		DLC_Radjen_Memory_16_Parallax_SimurghPowers,
+		// Token: 0x04004CF4 RID: 19700
+		DLC_Radjen_FullHaoma_01_Memory_East_Village = 2421,
+		// Token: 0x04004CF5 RID: 19701
+		DLC_Radjen_FullHaoma_02_Memory_West_Caravan,
+		// Token: 0x04004CF6 RID: 19702
+		DLC_Radjen_FullHaoma_03_UvishkaEX,
+		// Token: 0x04004CF7 RID: 19703
+		DLC_Radjen_FullHaoma_04_UndeadBlackBelt,
+		// Token: 0x04004CF8 RID: 19704
+		DLC_Radjen_PotionUpgradeCount_01 = 2431,
+		// Token: 0x04004CF9 RID: 19705
+		DLC_Radjen_PotionUpgradeCount_02,
+		// Token: 0x04004CFA RID: 19706
+		DLC_Radjen_PotionUpgradeCount_03,
+		// Token: 0x04004CFB RID: 19707
+		DLC_LifeTotemBonusChunk = 2440,
+		// Token: 0x04004CFC RID: 19708
+		DLC_RadjenDefconLine = 2460,
+		// Token: 0x04004CFD RID: 19709
+		DLC_Artaban_Fight_Book,
+		// Token: 0x04004CFE RID: 19710
+		DLC_AllItemsMap_RadjenMindPalace = 2470
+	}
+}
+
+using System;
+
+namespace Alkawa.Gameplay.Controller
+{
+	// Token: 0x02001334 RID: 4916
+	public enum EPlayerUnlockableAbility
+	{
+		// Token: 0x0400DB6E RID: 56174
+		None,
+		// Token: 0x0400DB6F RID: 56175
+		AirDash,
+		// Token: 0x0400DB70 RID: 56176
+		Bow,
+		// Token: 0x0400DB71 RID: 56177
+		Chakram,
+		// Token: 0x0400DB72 RID: 56178
+		Teleport,
+		// Token: 0x0400DB73 RID: 56179
+		Warp,
+		// Token: 0x0400DB74 RID: 56180
+		Scarf,
+		// Token: 0x0400DB75 RID: 56181
+		ClairVoyance,
+		// Token: 0x0400DB76 RID: 56182
+		FocusMaelstrom,
+		// Token: 0x0400DB77 RID: 56183
+		FocusSuperWarrior,
+		// Token: 0x0400DB78 RID: 56184
+		FocusHeal,
+		// Token: 0x0400DB79 RID: 56185
+		FocusSuperShot_DEPRECATED,
+		// Token: 0x0400DB7A RID: 56186
+		FocusWindSlashAttack,
+		// Token: 0x0400DB7B RID: 56187
+		DoubleJump,
+		// Token: 0x0400DB7C RID: 56188
+		Guard,
+		// Token: 0x0400DB7D RID: 56189
+		Ubiquity,
+		// Token: 0x0400DB7E RID: 56190
+		MiniMap,
+		// Token: 0x0400DB7F RID: 56191
+		FocusAntiAir,
+		// Token: 0x0400DB80 RID: 56192
+		FocusPiercingAttack,
+		// Token: 0x0400DB81 RID: 56193
+		FocusGroundSlam,
+		// Token: 0x0400DB82 RID: 56194
+		Lantern,
+		// Token: 0x0400DB83 RID: 56195
+		FocusLifeDrain_DEPRECATED,
+		// Token: 0x0400DB84 RID: 56196
+		FocusSuperShotLaser,
+		// Token: 0x0400DB85 RID: 56197
+		Vision,
+		// Token: 0x0400DB86 RID: 56198
+		FocusFullCounter,
+		// Token: 0x0400DB87 RID: 56199
+		FocusSuperChargeAttack,
+		// Token: 0x0400DB88 RID: 56200
+		ChakramTeleport
+	}
+}
+
+using System;
+
+namespace Alkawa.Gameplay
+{
+	// Token: 0x02000D6A RID: 3434
+	public enum EStoneOfKnowledge
+	{
+		// Token: 0x04009A77 RID: 39543
+		None,
+		// Token: 0x04009A78 RID: 39544
+		BowMultiShot,
+		// Token: 0x04009A79 RID: 39545
+		BowFireArrow,
+		// Token: 0x04009A7A RID: 39546
+		TeleportShockWave,
+		// Token: 0x04009A7B RID: 39547
+		LifeStone,
+		// Token: 0x04009A7C RID: 39548
+		BraveStone,
+		// Token: 0x04009A7D RID: 39549
+		DaredevilStone,
+		// Token: 0x04009A7E RID: 39550
+		SafetyStone,
+		// Token: 0x04009A7F RID: 39551
+		CelestialStone = 9,
+		// Token: 0x04009A80 RID: 39552
+		HawkStone = 11,
+		// Token: 0x04009A81 RID: 39553
+		PhoenixStone = 13,
+		// Token: 0x04009A82 RID: 39554
+		FocusExtendedHits_Deprecated,
+		// Token: 0x04009A83 RID: 39555
+		Focus,
+		// Token: 0x04009A84 RID: 39556
+		Prayer,
+		// Token: 0x04009A85 RID: 39557
+		Tower,
+		// Token: 0x04009A86 RID: 39558
+		Monk,
+		// Token: 0x04009A87 RID: 39559
+		Finisher,
+		// Token: 0x04009A88 RID: 39560
+		TeleportRay = 21,
+		// Token: 0x04009A89 RID: 39561
+		Knight = 23,
+		// Token: 0x04009A8A RID: 39562
+		Dauntless,
+		// Token: 0x04009A8B RID: 39563
+		Resilience_Deprecated,
+		// Token: 0x04009A8C RID: 39564
+		EvilEyeStone,
+		// Token: 0x04009A8D RID: 39565
+		SteelStone,
+		// Token: 0x04009A8E RID: 39566
+		CounterAttackStone,
+		// Token: 0x04009A8F RID: 39567
+		WealthStone,
+		// Token: 0x04009A90 RID: 39568
+		MagnetStone,
+		// Token: 0x04009A91 RID: 39569
+		Poison,
+		// Token: 0x04009A92 RID: 39570
+		Flame,
+		// Token: 0x04009A93 RID: 39571
+		Treasure,
+		// Token: 0x04009A94 RID: 39572
+		HunterStone,
+		// Token: 0x04009A95 RID: 39573
+		DodgeMaster,
+		// Token: 0x04009A96 RID: 39574
+		VortexStone_Deprecated,
+		// Token: 0x04009A97 RID: 39575
+		ExtendedHits,
+		// Token: 0x04009A98 RID: 39576
+		ShieldOfMithra,
+		// Token: 0x04009A99 RID: 39577
+		DarkEye,
+		// Token: 0x04009A9A RID: 39578
+		ChakramVortex = 41,
+		// Token: 0x04009A9B RID: 39579
+		RiddleStone_Deprecated,
+		// Token: 0x04009A9C RID: 39580
+		VoidStone,
+		// Token: 0x04009A9D RID: 39581
+		FrozenStar_Deprecated,
+		// Token: 0x04009A9E RID: 39582
+		ExplosiveStone,
+		// Token: 0x04009A9F RID: 39583
+		BeeEater,
+		// Token: 0x04009AA0 RID: 39584
+		Thunder,
+		// Token: 0x04009AA1 RID: 39585
+		Ice,
+		// Token: 0x04009AA2 RID: 39586
+		RefillArrow = 54,
+		// Token: 0x04009AA3 RID: 39587
+		SuperArrow = 50,
+		// Token: 0x04009AA4 RID: 39588
+		FireStormCharge,
+		// Token: 0x04009AA5 RID: 39589
+		FrozenShield,
+		// Token: 0x04009AA6 RID: 39590
+		FastFallMine,
+		// Token: 0x04009AA7 RID: 39591
+		RevengeCounter = 49,
+		// Token: 0x04009AA8 RID: 39592
+		ChakramLifeSteal = 55
+	}
+}
+
+
