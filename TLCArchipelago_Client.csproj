@@ -4,13 +4,14 @@
     <TargetFramework>net6.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
-    <AssemblyName>PoPRandomizer</AssemblyName>
-    <RootNamespace>PoPRandomizer</RootNamespace>
+    <AssemblyName>TLCArchipelago_Client</AssemblyName>
+    <RootNamespace>TLCArchipelago_Client</RootNamespace>
 
     <!-- Stops MSBuild from copying every dependency DLL into your output folder.
          BepInEx already has all these loaded; you only want YOUR plugin dll to end up
          in bin\, not fifty copies of assemblies that are already in the game/BepInEx folders. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
 
@@ -27,6 +28,11 @@
     <PackageReference Include="BepInEx.Core" Version="6.0.0-be.*" />
     <PackageReference Include="Il2CppInterop.Runtime" Version="1.5.3" />
     <PackageReference Include="Il2CppInterop.Common" Version="1.5.3" />
+    <PackageReference Include="Archipelago.MultiClient.Net" Version="6.6.0" />
+    <PackageReference Include="Archipelago.MultiClient.Net.Analyzers" Version="1.3.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -44,7 +50,15 @@
       <HintPath>$(GameDir)\BepInEx\interop\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-
+    <Reference Include="Il2CppUnityEngine.IMGUIModule">
+      <HintPath>C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\games\Prince of Persia The Lost Crown\BepInEx\interop\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppUnityEngine.TextRenderingModule">
+      <HintPath>C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\games\Prince of Persia The Lost Crown\BepInEx\interop\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    
     <!-- The actual game assembly containing Alkawa.Gameplay classes.
          Check BepInEx\interop\ for the exact filename — it may not be called
          exactly this, open it in dnSpy to confirm the namespace lives inside it. -->
