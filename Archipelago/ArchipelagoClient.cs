@@ -8,6 +8,8 @@ using Archipelago.MultiClient.Net.Helpers;
 using Archipelago.MultiClient.Net.Packets;
 using ArchipelagoBepin6Template.Unity.IL2Cpp.Utils;
 using TLCArchipelago_Client;
+using System.Threading.Tasks;
+
 
 
 namespace ArchipelagoBepin6Template.Unity.IL2Cpp.Archipelago;
@@ -15,7 +17,7 @@ namespace ArchipelagoBepin6Template.Unity.IL2Cpp.Archipelago;
 public class ArchipelagoClient
 {
     public const string APVersion = "0.5.0";
-    private const string Game = "My Game";
+    private const string Game = "APQuest";
 
     public static bool Authenticated;
     private bool attemptingConnection;
@@ -23,6 +25,10 @@ public class ArchipelagoClient
     public static ArchipelagoData ServerData = new();
     private DeathLinkHandler DeathLinkHandler;
     private ArchipelagoSession session;
+    private bool alreadyRunning = false;
+    
+    private bool intentionalDisconnect = false;
+    private CancellationTokenSource reconnectCTS;
 
     /// <summary>
     /// call to connect to an Archipelago session. Connection info should already be set up on ServerData
@@ -31,7 +37,8 @@ public class ArchipelagoClient
     public void Connect()
     {
         if (Authenticated || attemptingConnection) return;
-
+        attemptingConnection = true;
+        intentionalDisconnect = false;
         try
         {
             session = ArchipelagoSessionFactory.CreateSession(ServerData.Uri);
@@ -100,9 +107,10 @@ public class ArchipelagoClient
             DeathLinkHandler = new(session.CreateDeathLinkService(), ServerData.SlotName);
             session.Locations.CompleteLocationChecksAsync(ServerData.CheckedLocations.ToArray());
             outText = $"Successfully connected to {ServerData.Uri} as {ServerData.SlotName}!";
+            SendMessage("Hello from the lost crown!");
 
-            ArchipelagoConsole.LogMessage(outText);
         }
+
         else
         {
             var failure = (LoginFailure)result;
@@ -113,6 +121,7 @@ public class ArchipelagoClient
 
             Authenticated = false;
             Disconnect();
+
         }
 
         ArchipelagoConsole.LogMessage(outText);
@@ -122,12 +131,18 @@ public class ArchipelagoClient
     /// <summary>
     /// something went wrong, or we need to properly disconnect from the server. cleanup and re null our session
     /// </summary>
-    private void Disconnect()
+    public void Disconnect()
     {
+        intentionalDisconnect = true;
         Plugin.BepinLogger.LogDebug("disconnecting from server...");
         session?.Socket.DisconnectAsync();
+        CleanupSessionState();
+    }
+    private void CleanupSessionState()
+    {
         session = null;
         Authenticated = false;
+        
     }
 
     public void SendMessage(string message)
@@ -161,6 +176,13 @@ public class ArchipelagoClient
     {
         Plugin.BepinLogger.LogError(e);
         ArchipelagoConsole.LogMessage(message);
+
+        if (intentionalDisconnect)
+        {
+            return;
+        }
+        CleanupSessionState();
+        AttemptReconnectWithBackoff();
     }
 
     /// <summary>
@@ -170,6 +192,47 @@ public class ArchipelagoClient
     private void OnSessionSocketClosed(string reason)
     {
         Plugin.BepinLogger.LogError($"Connection to Archipelago lost: {reason}");
-        Disconnect();
+        if (intentionalDisconnect)
+        {
+            return;
+        }
+        CleanupSessionState();
+        AttemptReconnectWithBackoff();
+    }
+
+    private async void AttemptReconnectWithBackoff()
+    {
+        if(alreadyRunning) return;
+        alreadyRunning = true;
+        reconnectCTS = new CancellationTokenSource();
+        var delays = new[] {10000, 20000, 30000, 60000};//ms
+        int delayIndex = 0;
+
+        try
+        {
+            while (!Authenticated)
+            {
+                await Task.Delay(delays[Math.Min(delayIndex, delays.Length-1)], reconnectCTS.Token);
+                delayIndex++;
+                Plugin.BepinLogger.LogInfo($"Attempting to reconnect to Archipelago server {ServerData.Uri} as {ServerData.SlotName}...");
+                Connect();
+                
+            }            
+        }
+        catch (TaskCanceledException)
+        {
+            Plugin.BepinLogger.LogInfo("Reconnection attempt cancelled.");
+        }
+        finally
+        {
+            alreadyRunning = false;
+            reconnectCTS.Dispose();
+            reconnectCTS = null;
+        }
+    }
+
+    public void CancelReconnect()
+    {
+        reconnectCTS?.Cancel();
     }
 }
