@@ -6,22 +6,80 @@ using Alkawa.Gameplay;
 using Alkawa.Gameplay.Controller;
 using System.Collections.Generic;
 using UnityEngine;
+using ArchipelagoBepin6Template.Unity.IL2Cpp.Archipelago;
+using ArchipelagoBepin6Template.Unity.IL2Cpp.Utils;
+
 
 namespace TLCArchipelago_Client
 {
-    [BepInPlugin("com.ThymeCodes.poplostcrown.TLCArchipelago_Client", "The Lost Crown Archipelago Client", "0.1.0")]
+    [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     public class Plugin : BasePlugin
     {
-        internal static ManualLogSource Log;
+        public const string PluginGUID = "com.ThymeCodes.poplostcrown.TLCArchipelago_Client";
+        public const string PluginName = "The Lost Crown Archipelago Client";
+        public const string PluginVersion = "0.1.0";
+
+        public const string ModDisplayInfo = $"{PluginName} v{PluginVersion}";
+        private const string APDisplayInfo = $"Archipelago v{ArchipelagoClient.APVersion}";
+        internal static ManualLogSource BepinLogger;
+        public static ArchipelagoClient ArchipelagoClient;
 
         public override void Load()
         {
-            Log = base.Log;
+            BepinLogger = base.Log;
+            ArchipelagoClient = new ArchipelagoClient();
+            ArchipelagoConsole.Awake();
+
             var harmony = new Harmony("com.ThymeCodes.poplostcrown.TLCArchipelago_Client");
             harmony.PatchAll();
-            Log.LogInfo("The Lost Crown Archipelago Client loaded!");
+            BepinLogger.LogInfo($"{ModDisplayInfo} loaded!");
         }
+        private void OnGUI()
+        {
+            // show the mod is currently loaded in the corner
+           GUI.Label(new Rect(16, 16, 300, 20), ModDisplayInfo);
+           ArchipelagoConsole.OnGUI();
+
+           string statusMessage;
+           // show the Archipelago Version and whether we're connected or not
+           if (ArchipelagoClient.Authenticated)
+           {
+               // if your game doesn't usually show the cursor this line may be necessary
+               // Cursor.visible = false;
+
+               statusMessage = " Status: Connected";
+               GUI.Label(new Rect(16, 50, 300, 20), APDisplayInfo + statusMessage);
+           }
+           else
+           {
+               // if your game doesn't usually show the cursor this line may be necessary
+               // Cursor.visible = true;
+
+               statusMessage = " Status: Disconnected";
+               GUI.Label(new Rect(16, 50, 300, 20), APDisplayInfo + statusMessage);
+               GUI.Label(new Rect(16, 70, 150, 20), "Host: ");
+               GUI.Label(new Rect(16, 90, 150, 20), "Player Name: ");
+               GUI.Label(new Rect(16, 110, 150, 20), "Password: ");
+
+               ArchipelagoClient.ServerData.Uri = GUI.TextField(new Rect(150, 70, 150, 20),
+                   ArchipelagoClient.ServerData.Uri);
+               ArchipelagoClient.ServerData.SlotName = GUI.TextField(new Rect(150, 90, 150, 20),
+                   ArchipelagoClient.ServerData.SlotName);
+               ArchipelagoClient.ServerData.Password = GUI.TextField(new Rect(150, 110, 150, 20),
+                   ArchipelagoClient.ServerData.Password);
+
+               // requires that the player at least puts *something* in the slot name
+               if (GUI.Button(new Rect(16, 130, 100, 20), "Connect") &&
+                   !ArchipelagoClient.ServerData.SlotName.IsNullOrWhiteSpace())
+               {
+                   ArchipelagoClient.Connect();
+               }
+           }
+           // this is a good place to create and add a bunch of debug buttons
+        }
+        
     }
+
 
     public static class Substitutions
     {
@@ -67,7 +125,7 @@ namespace TLCArchipelago_Client
         {
             var key = LocationTracker.BuildKey(__instance.m_Owner);
             LocationTracker.PendingLocationKey = key;
-            Plugin.Log.LogInfo($"COLLECTIBLE TRIGGERED: location='{key}'");
+            Plugin.BepinLogger.LogInfo($"COLLECTIBLE TRIGGERED: location='{key}'");
         }
     }
 
@@ -78,7 +136,7 @@ namespace TLCArchipelago_Client
         {
             var key = LocationTracker.BuildKey(__instance.m_Owner);
             LocationTracker.PendingLocationKey = key;
-            Plugin.Log.LogInfo($"CUTSCENE TRIGGERED: location='{key}'");
+            Plugin.BepinLogger.LogInfo($"CUTSCENE TRIGGERED: location='{key}'");
         }
     }
 
@@ -94,7 +152,7 @@ namespace TLCArchipelago_Client
             // ability grant instead — the player gets ONE reward, not both.
             if (key != null && Substitutions.EarlyAbilityGrants.TryGetValue(key, out var earlyAbility))
             {
-                Plugin.Log.LogInfo($"SWAPPING ITEM FOR ABILITY: {earlyAbility} (location={key}) — original item grant skipped");
+                Plugin.BepinLogger.LogInfo($"SWAPPING ITEM FOR ABILITY: {earlyAbility} (location={key}) — original item grant skipped");
                 __instance.m_playerComponent.PlayerAbilities.UnlockAbility(earlyAbility, true, true, 0f);
                 LocationTracker.PendingLocationKey = null;
                 __result = 0; // no item was actually added
@@ -103,7 +161,7 @@ namespace TLCArchipelago_Client
 
             if (key != null && Substitutions.ItemOverrides.TryGetValue(key, out var replacement))
             {
-                Plugin.Log.LogInfo($"SUBSTITUTING ITEM: {_itemType} -> {replacement} (location={key})");
+                Plugin.BepinLogger.LogInfo($"SUBSTITUTING ITEM: {_itemType} -> {replacement} (location={key})");
                 _itemType = replacement;
             }
 
@@ -122,7 +180,7 @@ namespace TLCArchipelago_Client
             var key = LocationTracker.PendingLocationKey;
             if (key != null && Substitutions.AbilityOverrides.TryGetValue(key, out var replacement))
             {
-                Plugin.Log.LogInfo($"SUBSTITUTING ABILITY: {_ability} -> {replacement} (location={key})");
+                Plugin.BepinLogger.LogInfo($"SUBSTITUTING ABILITY: {_ability} -> {replacement} (location={key})");
                 _ability = replacement;
             }
             LocationTracker.PendingLocationKey = null;
@@ -167,7 +225,7 @@ public class OpenShopMenu_Substitution_Patch
                 var current = trade?.m_item?.m_itemId;
                 if (current.HasValue && itemMap.TryGetValue(current.Value, out var replacement))
                 {
-                    Plugin.Log.LogInfo($"SUBSTITUTING SHOP ITEM: {current.Value} -> {replacement}");
+                    Plugin.BepinLogger.LogInfo($"SUBSTITUTING SHOP ITEM: {current.Value} -> {replacement}");
                     trade.m_item.m_itemId = replacement;
                 }
             }

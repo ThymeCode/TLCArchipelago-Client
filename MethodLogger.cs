@@ -86,7 +86,7 @@ namespace TLCArchipelago_Client
                 ? string.Join(", ", Array.ConvertAll(__args, a => a?.ToString() ?? "null"))
                 : "(no args)";
 
-            Plugin.Log.LogInfo($"FIRST CALL (completed): {key}({argsStr})");
+            Plugin.BepinLogger.LogInfo($"FIRST CALL (completed): {key}({argsStr})");
         }
     }
 }
