@@ -9,15 +9,17 @@ using Archipelago.MultiClient.Net.Packets;
 using ArchipelagoBepin6Template.Unity.IL2Cpp.Utils;
 using TLCArchipelago_Client;
 using System.Threading.Tasks;
+using System.Collections;
 
-
+using Archipelago.MultiClient.Net.Models;   // for ItemInfo
+using System.Collections.Generic;
 
 namespace ArchipelagoBepin6Template.Unity.IL2Cpp.Archipelago;
 
 public class ArchipelagoClient
 {
-    public const string APVersion = "0.5.0";
-    private const string Game = "APQuest";
+    public const string APVersion = "0.6.8";
+    private const string Game = "PoPTLC";
 
     public static bool Authenticated;
     private bool attemptingConnection;
@@ -29,6 +31,10 @@ public class ArchipelagoClient
     
     private bool intentionalDisconnect = false;
     private CancellationTokenSource reconnectCTS;
+    //private Queue<Item> itemQueue = new Queue<Item>();
+
+    private readonly object checkLock = new object();
+
 
     /// <summary>
     /// call to connect to an Archipelago session. Connection info should already be set up on ServerData
@@ -76,7 +82,7 @@ public class ArchipelagoClient
                     session.TryConnectAndLogin(
                         Game,
                         ServerData.SlotName,
-                        ItemsHandlingFlags.NoItems, // TODO make sure to change this line
+                        ItemsHandlingFlags.AllItems, 
                         new Version(APVersion),
                         password: ServerData.Password,
                         requestSlotData: false // ServerData.NeedSlotData
@@ -105,7 +111,7 @@ public class ArchipelagoClient
             Authenticated = true;
 
             DeathLinkHandler = new(session.CreateDeathLinkService(), ServerData.SlotName);
-            session.Locations.CompleteLocationChecksAsync(ServerData.CheckedLocations.ToArray());
+            session.Locations.CompleteLocationChecksAsync(SnapshotChecks());
             outText = $"Successfully connected to {ServerData.Uri} as {ServerData.SlotName}!";
             SendMessage("Hello from the lost crown!");
 
@@ -156,16 +162,54 @@ public class ArchipelagoClient
     /// <param name="helper">item helper which we can grab our item from</param>
     private void OnItemReceived(ReceivedItemsHelper helper)
     {
-        var receivedItem = helper.DequeueItem();
+        var batch = new List<ItemInfo>();
+        while (helper.Any()) batch.Add(helper.DequeueItem());
 
-        if (helper.Index <= ServerData.Index) return;
+        int firstIndex = helper.AllItemsReceived.Count - batch.Count;
+        for (int i = 0; i < batch.Count; i++)
+        {
+            var it = batch[i];
+            ItemDelivery.Enqueue(new PendingItem(it.ItemId, it.ItemName, it.Player.Name, firstIndex + i));
+        }
 
-        ServerData.Index++;
 
-        // TODO reward the item here
-        // if items can be received while in an invalid state for actually handling them, they can be placed in a local
-        // queue/collection to be handled later
+        //QueueItemReward(receivedItem);
+
+        
     }
+    // in ArchipelagoClient
+    public void ReportCheck(long locationId)
+    {
+        lock (checkLock)
+        {
+            if (!ServerData.CheckedLocations.Contains(locationId))
+                ServerData.CheckedLocations.Add(locationId);
+        }
+
+        try
+        {
+            var s = session;                      // local copy: another thread may null it
+            if (Authenticated && s != null)
+                s.Locations.CompleteLocationChecksAsync(locationId);
+        }
+        catch (Exception e) { Plugin.BepinLogger.LogError(e); }
+    }
+
+    private long[] SnapshotChecks()
+    {
+        lock (checkLock) { return ServerData.CheckedLocations.ToArray(); }
+    }
+
+    /*private void QueueItemReward(Item item)
+    {
+        Plugin.BepinLogger.LogInfo($"Received item {item.ItemName} from {item.Sender}, waiting to give");
+        ArchipelagoConsole.LogMessage($"Received item {item.ItemName} from {item.Sender}, waiting to give");
+        // TODO reward the item here
+        itemQueue.Enqueue(item);
+
+    }*/
+
+
 
     /// <summary>
     /// something went wrong with our socket connection

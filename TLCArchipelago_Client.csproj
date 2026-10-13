@@ -7,9 +7,6 @@
     <AssemblyName>TLCArchipelago_Client</AssemblyName>
     <RootNamespace>TLCArchipelago_Client</RootNamespace>
 
-    <!-- Stops MSBuild from copying every dependency DLL into your output folder.
-         BepInEx already has all these loaded; you only want YOUR plugin dll to end up
-         in bin\, not fifty copies of assemblies that are already in the game/BepInEx folders. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDynamicLoading>true</EnableDynamicLoading>
@@ -62,9 +59,7 @@
       <Private>false</Private>
     </Reference>
     
-    <!-- The actual game assembly containing Alkawa.Gameplay classes.
-         Check BepInEx\interop\ for the exact filename — it may not be called
-         exactly this, open it in dnSpy to confirm the namespace lives inside it. -->
+
     <Reference Include="Il2CppAlkawa">
       <HintPath>$(GameDir)\BepInEx\interop\Alkawa.Gameplay.dll</HintPath>
       <Private>false</Private>
@@ -77,6 +72,14 @@
       <HintPath>$(GameDir)\BepInEx\interop\Alkawa.ObjectRegister.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(GameDir)\BepInEx\interop\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="ap_icon.png" />
   </ItemGroup>
 
 

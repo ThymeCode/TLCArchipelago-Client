@@ -4,84 +4,16 @@ using BepInEx.Logging;
 using HarmonyLib;
 using Alkawa.Gameplay;
 using Alkawa.Gameplay.Controller;
+using Alkawa.Engine;
 using System.Collections.Generic;
 using UnityEngine;
 using ArchipelagoBepin6Template.Unity.IL2Cpp.Archipelago;
 using ArchipelagoBepin6Template.Unity.IL2Cpp.Utils;
 using System.Threading.Tasks;
+using Alkawa.Gameplay.Player.Components;  
 
 namespace TLCArchipelago_Client
-{
-    [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
-    public class Plugin : BasePlugin
-    {
-        public const string PluginGUID = "com.ThymeCodes.poplostcrown.TLCArchipelago_Client";
-        public const string PluginName = "The Lost Crown Archipelago Client";
-        public const string PluginVersion = "0.1.1";
-
-        public const string ModDisplayInfo = $"{PluginName} v{PluginVersion}";
-        public const string APDisplayInfo = $"Archipelago v{ArchipelagoClient.APVersion}";
-        internal static ManualLogSource BepinLogger;
-        public static ArchipelagoClient ArchipelagoClient;
-
-        public override void Load()
-        {
-            BepinLogger = base.Log;
-            ArchipelagoClient = new ArchipelagoClient();
-            ArchipelagoClient.ServerData.Uri = "localhost:38281"; // or wherever your test server is
-            ArchipelagoClient.ServerData.SlotName = "Player1";
-            ArchipelagoClient.ServerData.Password = "";
-            ArchipelagoConsole.Awake();
-
-            var harmony = new Harmony("com.ThymeCodes.poplostcrown.TLCArchipelago_Client");
-            harmony.PatchAll();
-            BepinLogger.LogInfo($"{ModDisplayInfo} loaded!");
-            ArchipelagoClient.Connect();
-            // For testing connection
-            // Task.Delay(10000).ContinueWith(_ => Plugin.ArchipelagoClient.Disconnect());
-            Task.Delay(20000).ContinueWith(_ => ArchipelagoClient.CancelReconnect());
-        }
-    }
-
-
-
-
-    public static class Substitutions
-    {
-        public static readonly Dictionary<string, EItemType> ItemOverrides = new Dictionary<string, EItemType>
-        {
-        };
-
-        // Case 1 (REPLACE): this location's natural UnlockAbility call gets
-        // rewritten to grant a different ability instead.
-        public static readonly Dictionary<string, EPlayerUnlockableAbility> AbilityOverrides = new Dictionary<string, EPlayerUnlockableAbility>
-        {
-            { "TRG_IASpawn@(106.34, 4.49, 0.00)", EPlayerUnlockableAbility.DoubleJump },
-            
-        };
-
-        // Case 2 (SWAP): this location's item grant is replaced with an ability
-        // grant instead. AddItem_Substitution_Patch skips the original item grant
-        // and calls UnlockAbility itself.
-        public static readonly Dictionary<string, EPlayerUnlockableAbility> EarlyAbilityGrants = new Dictionary<string, EPlayerUnlockableAbility>
-        {
-            { "TRG_Interactor_Conversation_Varham_PostFight@(139.62, 16.21, 0.00)", EPlayerUnlockableAbility.Bow },
-            { "TRG_Interactor_PotionLoot@(-83.59, -26.44, 0.00)", EPlayerUnlockableAbility.Chakram },
-        };
-        
-    }
-
-    public static class LocationTracker
-    {
-        public static string PendingLocationKey;
-
-        public static string BuildKey(GameObject owner)
-        {
-            if (owner == null) return null;
-            var pos = owner.transform.position;
-            return $"{owner.name}@({pos.x:F2}, {pos.y:F2}, {pos.z:F2})";
-        }
-    }
+{ 
 
     [HarmonyPatch(typeof(InteractiveElementLogic_CollectibleItem), "TriggerLogic_Internal")]
     public class TriggerLogic_Patch
@@ -104,6 +36,8 @@ namespace TLCArchipelago_Client
             Plugin.BepinLogger.LogInfo($"CUTSCENE TRIGGERED: location='{key}'");
         }
     }
+
+ /*   
 
     [HarmonyPatch(typeof(PlayerInventorySubComponent), "AddItem",
         new System.Type[] { typeof(EItemType), typeof(int), typeof(EItemAcquisitionMode) })]
@@ -150,6 +84,107 @@ namespace TLCArchipelago_Client
             }
             LocationTracker.PendingLocationKey = null;
         }
+    }*/
+
+    [HarmonyPatch(typeof(PlayerInventorySubComponent), "AddItem", new System.Type[] { typeof(EItemType), typeof(int), typeof(EItemAcquisitionMode) })]
+    public class AddItem_Intercept_Patch
+    {
+        static bool Prefix(PlayerInventorySubComponent __instance, EItemType _itemType, int _amount, EItemAcquisitionMode _acquisitionMode, ref int __result)
+        {
+            if (ItemDelivery.IsGranting) return true;
+
+            var key = LocationTracker.PendingLocationKey;
+            if (key == null) return true;
+            LocationTracker.PendingLocationKey = null;
+
+            if (!LocationMap.TryGetId(key, out long locationId)) return true;
+
+            ItemDelivery.ReportCheck(locationId);
+            if (RitualPolicy.NeedsFullRitual(_itemType))
+            {
+
+                var ritual = __instance.m_playerComponent.PlayerRitual;
+                var info = ritual.GetRitualInfo(EPlayerRitual.PotionReveal);
+                //PopupIcon.Swap(info, ApSprite.Get());  
+                PopupText.Arm("Archipelago Check", "Check Sent", "Your item was sent into the multiworld.");                
+                ritual.InternalTryStartRitual(EPlayerRitual.PotionReveal, _itemType, 0f, false);
+                var ri = ritual.StateInfo.m_currentRitualInformation;
+                var page = ri?.m_descriptionPageData?.TryCast<UI_DescriptionPageData>();
+                PopupIcon.SwapPage(page, ApSprite.Get());
+               // __instance.m_playerComponent.PlayerRitual.InternalTryStartRitual(EPlayerRitual.PotionReveal, _itemType, 0f, false);
+                //var info = __instance.m_playerComponent.PlayerRitual.GetRitualInfo(EPlayerRitual.PotionReveal);
+                //Plugin.BepinLogger.LogInfo($"PotionReveal icon = {info?.m_icon?.name ?? "null"}");
+
+            // PotionReveal is the only ID observed so far
+            //    __instance.m_playerComponent.PlayerRitual.InternalTryStartRitual(EPlayerRitual.PotionReveal, _itemType, 0f, false);
+            }
+            __result = _amount;
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerAbilitiesSubComponent), "UnlockAbility")]
+    public class UnlockAbility_Intercept_Patch
+    {
+        static bool Prefix()
+        {
+            if(ItemDelivery.IsGranting) return true;
+
+            var key = LocationTracker.PendingLocationKey;
+            if (key == null) return true;
+            LocationTracker.PendingLocationKey = null;
+
+            if(!LocationMap.TryGetId(key, out long locationId)) return true;
+
+            ItemDelivery.ReportCheck(locationId);
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(GameFlow), "get_ActiveGameFlowState")]
+    public class ActiveGameFlowState_Patch
+    {
+        static void Postfix(EGameFlowStateType __result)
+        {
+            if (__result == EGameFlowStateType.InGame) ItemDelivery.Tick();
+        }
+    }
+
+    [HarmonyPatch(typeof(GameFlow), nameof(GameFlow.PushState), new[] { typeof(EGameFlowStateType) })]
+    public class PushState_Patch
+    {
+        static void Postfix() => ItemDelivery.TryDeliver();
+    }
+
+    [HarmonyPatch(typeof(GameFlow), nameof(GameFlow.PopState), new[] { typeof(EGameFlowStateType), typeof(bool) })]
+    public class PopStateTyped_Patch
+    {
+        static void Postfix() => ItemDelivery.TryDeliver();
+    }
+
+    [HarmonyPatch(typeof(GameFlow), nameof(GameFlow.PopState), new System.Type[0])]
+    public class PopState_Patch
+    {
+        static void Postfix() => ItemDelivery.TryDeliver();
+    }
+
+    [HarmonyPatch(typeof(PlayerComponent), nameof(PlayerComponent.OnAnimatorMoveProxy))]
+    public class PlayerTick_Patch
+    {
+        static void Postfix(PlayerComponent __instance)
+        {
+            if (__instance.IsPlayerDoppleganger) return;
+            ItemDelivery.SetPlayer(__instance);
+            RitualPolicy.Init(__instance.PlayerRitualInfoConfig);
+            ItemDelivery.Tick();
+        }
+
+    }
+
+    [HarmonyPatch(typeof(PlayerComponent), nameof(PlayerComponent.OnAlkawaDestroy))]
+    public class PlayerDestroy_Patch
+    {
+        static void Postfix(PlayerComponent __instance) => ItemDelivery.ClearPlayer(__instance);
     }
 //    public static class ShopSubstitutions
 //{
@@ -195,4 +230,5 @@ public class OpenShopMenu_Substitution_Patch
         }
     }
 }*/
+
 }
