@@ -13,6 +13,9 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDynamicLoading>true</EnableDynamicLoading>
+
+    <!-- you may need this for getting the multiclient dll to output for .net 6 and netstandard 2.0 -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <!-- ===================== CHANGE THIS PATH ===================== -->
@@ -76,11 +79,20 @@
     </Reference>
   </ItemGroup>
 
+
+
   <!-- Automatically copy your built plugin DLL straight into the game's plugins folder
        every time you build, so you don't have to do it by hand each time. -->
-  <Target Name="CopyToPlugins" AfterTargets="Build">
-    <MakeDir Directories="$(GameDir)\BepInEx\plugins\PoPRandomizer" Condition="!Exists('$(GameDir)\BepInEx\plugins\PoPRandomizer')" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\BepInEx\plugins\PoPRandomizer\" />
-  </Target>
+<Target Name="CopyToPlugins" AfterTargets="Build">
+  <MakeDir Directories="$(GameDir)\BepInEx\plugins\PoPRandomizer" Condition="!Exists('$(GameDir)\BepInEx\plugins\PoPRandomizer')" />
+  <ItemGroup>
+    <OutputFiles Include="$(TargetDir)$(AssemblyName).dll" />
+    <OutputFiles Include="$(TargetDir)Archipelago.MultiClient.Net.dll" />
+    <OutputFiles Include="$(TargetDir)Newtonsoft.Json.dll" />
+    <OutputFiles Include="$(TargetDir)SemanticVersioning.dll" />
+  </ItemGroup>
+  <Copy SourceFiles="@(OutputFiles)" DestinationFolder="$(GameDir)\BepInEx\plugins\PoPRandomizer\" />
+</Target>
+
 
 </Project>

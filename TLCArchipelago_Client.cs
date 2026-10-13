@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using ArchipelagoBepin6Template.Unity.IL2Cpp.Archipelago;
 using ArchipelagoBepin6Template.Unity.IL2Cpp.Utils;
-
+using System.Threading.Tasks;
 
 namespace TLCArchipelago_Client
 {
@@ -17,10 +17,10 @@ namespace TLCArchipelago_Client
     {
         public const string PluginGUID = "com.ThymeCodes.poplostcrown.TLCArchipelago_Client";
         public const string PluginName = "The Lost Crown Archipelago Client";
-        public const string PluginVersion = "0.1.0";
+        public const string PluginVersion = "0.1.1";
 
         public const string ModDisplayInfo = $"{PluginName} v{PluginVersion}";
-        private const string APDisplayInfo = $"Archipelago v{ArchipelagoClient.APVersion}";
+        public const string APDisplayInfo = $"Archipelago v{ArchipelagoClient.APVersion}";
         internal static ManualLogSource BepinLogger;
         public static ArchipelagoClient ArchipelagoClient;
 
@@ -28,57 +28,22 @@ namespace TLCArchipelago_Client
         {
             BepinLogger = base.Log;
             ArchipelagoClient = new ArchipelagoClient();
+            ArchipelagoClient.ServerData.Uri = "localhost:38281"; // or wherever your test server is
+            ArchipelagoClient.ServerData.SlotName = "Player1";
+            ArchipelagoClient.ServerData.Password = "";
             ArchipelagoConsole.Awake();
 
             var harmony = new Harmony("com.ThymeCodes.poplostcrown.TLCArchipelago_Client");
             harmony.PatchAll();
             BepinLogger.LogInfo($"{ModDisplayInfo} loaded!");
+            ArchipelagoClient.Connect();
+            // For testing connection
+            // Task.Delay(10000).ContinueWith(_ => Plugin.ArchipelagoClient.Disconnect());
+            Task.Delay(20000).ContinueWith(_ => ArchipelagoClient.CancelReconnect());
         }
-        private void OnGUI()
-        {
-            // show the mod is currently loaded in the corner
-           GUI.Label(new Rect(16, 16, 300, 20), ModDisplayInfo);
-           ArchipelagoConsole.OnGUI();
-
-           string statusMessage;
-           // show the Archipelago Version and whether we're connected or not
-           if (ArchipelagoClient.Authenticated)
-           {
-               // if your game doesn't usually show the cursor this line may be necessary
-               // Cursor.visible = false;
-
-               statusMessage = " Status: Connected";
-               GUI.Label(new Rect(16, 50, 300, 20), APDisplayInfo + statusMessage);
-           }
-           else
-           {
-               // if your game doesn't usually show the cursor this line may be necessary
-               // Cursor.visible = true;
-
-               statusMessage = " Status: Disconnected";
-               GUI.Label(new Rect(16, 50, 300, 20), APDisplayInfo + statusMessage);
-               GUI.Label(new Rect(16, 70, 150, 20), "Host: ");
-               GUI.Label(new Rect(16, 90, 150, 20), "Player Name: ");
-               GUI.Label(new Rect(16, 110, 150, 20), "Password: ");
-
-               ArchipelagoClient.ServerData.Uri = GUI.TextField(new Rect(150, 70, 150, 20),
-                   ArchipelagoClient.ServerData.Uri);
-               ArchipelagoClient.ServerData.SlotName = GUI.TextField(new Rect(150, 90, 150, 20),
-                   ArchipelagoClient.ServerData.SlotName);
-               ArchipelagoClient.ServerData.Password = GUI.TextField(new Rect(150, 110, 150, 20),
-                   ArchipelagoClient.ServerData.Password);
-
-               // requires that the player at least puts *something* in the slot name
-               if (GUI.Button(new Rect(16, 130, 100, 20), "Connect") &&
-                   !ArchipelagoClient.ServerData.SlotName.IsNullOrWhiteSpace())
-               {
-                   ArchipelagoClient.Connect();
-               }
-           }
-           // this is a good place to create and add a bunch of debug buttons
-        }
-        
     }
+
+
 
 
     public static class Substitutions
@@ -201,8 +166,6 @@ namespace TLCArchipelago_Client
 //        },
 //    };
 //}
-
-
 /*
 //[HarmonyPatch(typeof(InteractiveElementLogic_ShopKeeper), "OpenShopMenu")]
 public class OpenShopMenu_Substitution_Patch
