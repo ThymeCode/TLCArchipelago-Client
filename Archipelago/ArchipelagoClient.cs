@@ -171,11 +171,6 @@ public class ArchipelagoClient
             var it = batch[i];
             ItemDelivery.Enqueue(new PendingItem(it.ItemId, it.ItemName, it.Player.Name, firstIndex + i));
         }
-
-
-        //QueueItemReward(receivedItem);
-
-        
     }
     // in ArchipelagoClient
     public void ReportCheck(long locationId)
@@ -199,17 +194,6 @@ public class ArchipelagoClient
     {
         lock (checkLock) { return ServerData.CheckedLocations.ToArray(); }
     }
-
-    /*private void QueueItemReward(Item item)
-    {
-        Plugin.BepinLogger.LogInfo($"Received item {item.ItemName} from {item.Sender}, waiting to give");
-        ArchipelagoConsole.LogMessage($"Received item {item.ItemName} from {item.Sender}, waiting to give");
-        // TODO reward the item here
-        itemQueue.Enqueue(item);
-
-    }*/
-
-
 
     /// <summary>
     /// something went wrong with our socket connection
