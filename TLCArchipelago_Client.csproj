@@ -79,7 +79,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="ap_icon.png" />
+    <EmbeddedResource Include="Popup\ap_icon.png" />
   </ItemGroup>
 
 
