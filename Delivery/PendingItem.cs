@@ -10,13 +10,14 @@ namespace TLCArchipelago_Client
         public string ItemName;
         public string Sender;
         public int Index;   // position in the server's full item list; used to skip already-delivered items
-
-        public PendingItem(long itemId, string itemName, string sender, int index)
+        public long LocationId; // location ID of the item, used for PlacementCache lookups
+        public PendingItem(long itemId, string itemName, string sender, int index, long locationId)
         {
             ItemId = itemId;
             ItemName = itemName;
             Sender = sender;
             Index = index;
+            LocationId = locationId;
         }
     }
 }

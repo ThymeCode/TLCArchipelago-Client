@@ -21,7 +21,7 @@ namespace TLCArchipelago_Client
     {
         public const string PluginGUID = "com.ThymeCodes.poplostcrown.TLCArchipelago_Client";
         public const string PluginName = "The Lost Crown Archipelago Client";
-        public const string PluginVersion = "0.1.1";
+        public const string PluginVersion = "0.5.3";
 
         public const string ModDisplayInfo = $"{PluginName} v{PluginVersion}";
         public const string APDisplayInfo = $"Archipelago v{ArchipelagoClient.APVersion}";

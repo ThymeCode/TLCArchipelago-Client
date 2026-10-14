@@ -53,6 +53,7 @@ namespace TLCArchipelago_Client
         public static void Tick()
         {
             PopupIcon.Update();   // must run every frame, before the early returns below
+            PendingCheck.Update(currentPlayer);
             if (pendingCount == 0) return;
             float now = UnityEngine.Time.unscaledTime;   // unscaled so delivery still ticks while paused
             if (now < nextCheck) return;
@@ -71,7 +72,7 @@ namespace TLCArchipelago_Client
                 {
                     // Re-check the game state before every item: a grant (e.g. an ability ritual)
                     // can change it, and the next item should wait until we're back in gameplay.
-                    while (queue.Count > 0 && IsSafe())
+                    while (queue.Count > 0 && (IsSafe() || PendingCheck.IsPendingFor(queue.Peek().LocationId)))
                     {
                         var item = queue.Peek();
                         try
@@ -108,7 +109,7 @@ namespace TLCArchipelago_Client
         {
             var player = GetPlayer();
             if (player == null || player.IsInjectingProgressionData) return false;   // player missing or a save is loading
-
+            bool resolvesPending = PendingCheck.IsPendingFor(item.LocationId);
             if(!ItemMap.TryGet(item.ItemId, out var info))
             {
                 // Dropped, not retried: an unmapped item would otherwise block the queue forever.
@@ -127,6 +128,7 @@ namespace TLCArchipelago_Client
                     player.PlayerAbilities.UnlockAbility(info.Ability.Value, true, true, 0f);
                 }
                 Plugin.BepinLogger.LogInfo($"DELIVER: {item.ItemName} (id {item.ItemId}) from {item.Sender}, index {item.Index}");
+                if (resolvesPending) PendingCheck.OnEchoGranted();
                 return true;
             }
             finally

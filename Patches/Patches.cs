@@ -64,22 +64,22 @@ namespace TLCArchipelago_Client
 
             if (!LocationMap.TryGetId(key, out long locationId)) return true;   // unmapped location: vanilla
 
-            ItemDelivery.ReportCheck(locationId);
-
             // Cancelling AddItem also cancels the ritual (popup) it would have started, which leaves the
-            // player frozen. So for items that normally get a full popup, start the ritual ourselves.
+            // player frozen. So for items that normally get a full popup, make sure some ritual still plays.
+            // Decide now, from slot data. Own item: wait for the server's echo, so Grant() gives it and the
+            // game builds its own popup. Another game's item: generic popup straight away.
             if (RitualPolicy.NeedsFullRitual(_itemType))
             {
-                var ritual = __instance.m_playerComponent.PlayerRitual;
-                PopupText.Arm("Archipelago Check", "Check Sent", "Your item was sent into the multiworld.");
-                // PotionReveal is the only ritual ID observed so far, so every full-ritual item uses it for now.
-                ritual.InternalTryStartRitual(EPlayerRitual.PotionReveal, _itemType, 0f, false);
-
-                // The live description page only exists after the ritual starts; swap its sprite for the AP logo.
-                var ri = ritual.StateInfo.m_currentRitualInformation;
-                var page = ri?.m_descriptionPageData?.TryCast<UI_DescriptionPageData>();
-                PopupIcon.SwapPage(page, ApSprite.Get());
+                if (PlacementCache.TryGet(locationId, out var placement) && !placement.Own)
+                    PendingCheck.ShowGeneric(__instance.m_playerComponent, _itemType,
+                        placement.ItemName, "Item Sent", $"Sent to {placement.Player} ({placement.Game}).");
+                else
+                    PendingCheck.Begin(locationId, _itemType);   // own item, or no placement data: wait for the echo (3s fallback)
             }
+
+            // Order matters: Begin (above) must come before ReportCheck, so the echo can't arrive before we're waiting for it.
+            ItemDelivery.ReportCheck(locationId);
+
             __result = _amount;   // report "added" to the caller even though nothing was
             return false;         // skip the original AddItem
         }

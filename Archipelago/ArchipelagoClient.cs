@@ -90,7 +90,7 @@ public class ArchipelagoClient
                         ItemsHandlingFlags.AllItems, // all items, including ones from our own world: every reward goes through ItemDelivery
                         new Version(APVersion),
                         password: ServerData.Password,
-                        requestSlotData: false // ServerData.NeedSlotData
+                        requestSlotData: true // ServerData.NeedSlotData
                     )));
         }
         catch (Exception e)
@@ -113,6 +113,7 @@ public class ArchipelagoClient
             var success = (LoginSuccessful)result;
 
             ServerData.SetupSession(success.SlotData, session.RoomState.Seed);
+            PlacementCache.Load(success.SlotData);
             Authenticated = true;
 
             DeathLinkHandler = new(session.CreateDeathLinkService(), ServerData.SlotName);
@@ -182,7 +183,7 @@ public class ArchipelagoClient
         for (int i = 0; i < batch.Count; i++)
         {
             var it = batch[i];
-            ItemDelivery.Enqueue(new PendingItem(it.ItemId, it.ItemName, it.Player.Name, firstIndex + i));
+            ItemDelivery.Enqueue(new PendingItem(it.ItemId, it.ItemName, it.Player.Name, firstIndex + i, it.LocationId));
         }
     }
     /// <summary>

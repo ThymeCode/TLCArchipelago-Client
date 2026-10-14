@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Alkawa.Gameplay;
 using HarmonyLib;
 using UnityEngine;
@@ -5,53 +6,45 @@ using UnityEngine;
 namespace TLCArchipelago_Client
 {
     /// <summary>
-    /// Replaces the text on the "check sent" ritual popup. Arm() sets the replacement strings,
-    /// and the getText patches below swap them in for the potion popup's localization IDs
-    /// until the window expires.
+    /// Replaces the text on the "check sent" ritual popup. Arm() reads the localization IDs from the
+    /// live description page, so it works for any item; the getText patches below swap in our strings
+    /// for those IDs until the window expires.
     /// </summary>
     public static class PopupText
     {
-        // Localization IDs the potion popup resolves (found by logging UISmartLocId.getText during a vanilla pickup).
-        // These are specific to the potion ritual; other items' popups use different IDs.
-        const int NameId = 4903, HeaderId = 4456, DescId = 4904, HintId = 4905;
-
-        static string name, header, desc;
+        static readonly Dictionary<int, string> overrides = new Dictionary<int, string>();
         static float expires;
 
         /// <summary>
-        /// Sets the replacement text and opens a 15 second window in which it is applied.
-        /// Call just before starting the ritual.
+        /// Call AFTER the ritual has started (the page doesn't exist before that).
+        /// Pass "" for detail to hide the tutorial hint line.
         /// </summary>
-        public static void Arm(string itemName, string headerText, string description)
+        public static void Arm(UI_DescriptionPageData page, string title, string header, string description, string detail)
         {
-            name = itemName; header = headerText; desc = description;
-            // Possibly unneccessary. The window stops the override leaking onto later text that reuses these IDs
-            // (4456 is the generic "New Item Acquired" header), so it's a safety net rather than a requirement.
+            overrides.Clear();
+            if (page == null) return;
+            Add(page.m_titleText, title);
+            Add(page.m_headerText, header);
+            Add(page.m_descriptionText, description);
+            Add(page.m_detailText, detail);
             expires = Time.unscaledTime + 15f;
         }
 
-        /// <summary>
-        /// Called by the getText patches for every localized string the game resolves.
-        /// Returns true and the replacement if this ID is one we override and the window is open.
-        /// Runs very often, so it must stay cheap and must not throw.
-        /// </summary>
+        // ID 0 means "no localization entry" (the game falls back to debug text), and many unrelated
+        // strings share it, so we never override it.
+        static void Add(UISmartLocId id, string text)
+        {
+            if (id != null && id.m_locId != 0) overrides[id.m_locId] = text;
+        }
+
         public static bool TryGet(int locId, out string text)
         {
             text = null;
-            if (Time.unscaledTime > expires) return false;
-            switch (locId)
-            {
-                case NameId:   text = name;   break;
-                case HeaderId: text = header; break;
-                case DescId:   text = desc;   break;
-                case HintId:   text = "";     break;   // hide "drink a Potion" hint
-            }
-            return text != null;
+            if (overrides.Count == 0 || Time.unscaledTime > expires) return false;
+            return overrides.TryGetValue(locId, out text);
         }
     }
 
-    // Postfix on the parameterless getText overload: swaps the result when PopupText says so.
-    // getText has two overloads and the game may call either, so both are patched.
     [HarmonyPatch(typeof(UISmartLocId), nameof(UISmartLocId.getText), new System.Type[0])]
     public class GetText_Override_Patch
     {
@@ -60,9 +53,7 @@ namespace TLCArchipelago_Client
             if (PopupText.TryGet(__instance.m_locId, out var t)) __result = t;
         }
     }
-
-    // Same, for getText(out bool _isLocalized). The out parameter is declared via ArgumentType.Out
-    // because attribute arguments can't use typeof(bool).MakeByRefType().
+    
     [HarmonyPatch(typeof(UISmartLocId), nameof(UISmartLocId.getText),
         new[] { typeof(bool) }, new[] { ArgumentType.Out })]
     public class GetTextLocalized_Override_Patch
