@@ -4,77 +4,31 @@ using Alkawa.Engine;
 using ArchipelagoBepin6Template.Unity.IL2Cpp.Archipelago;
 using Alkawa.Gameplay.Player.Components; 
 using Alkawa.Gameplay;
-using Alkawa.Gameplay.Controller;
-using UnityEngine;
 
 namespace TLCArchipelago_Client
 {
-    public struct PendingItem
-    {
-        public long ItemId;
-        public string ItemName;
-        public string Sender;
-        public int Index;
-
-        public PendingItem(long itemId, string itemName, string sender, int index)
-        {
-            ItemId = itemId;
-            ItemName = itemName;
-            Sender = sender;
-            Index = index;
-        }
-    }
-
-    public static class PopupIcon
-    {
-        static PlayerRitualInfo pending;
-        static Sprite original;
-        static float restoreAt;
-        static UI_DescriptionPageData pagePending;
-        static Sprite pageOriginal;
-        public static void Swap(PlayerRitualInfo info, Sprite replacement)
-        {
-            Plugin.BepinLogger.LogInfo($"PopupIcon.Swap: info={(info == null ? "null" : "ok")}, sprite={(replacement == null ? "null" : replacement.name)}");
-            if (info == null || replacement == null) return;
-            original = info.m_icon;
-            pending = info;
-            info.m_icon = replacement;
-            Plugin.BepinLogger.LogInfo($"PopupIcon.Swap: icon now = {info.m_icon?.name ?? "null"} (was {original?.name ?? "null"})");
-            restoreAt = Time.unscaledTime + 3f;   // adjust after testing
-        }
-
-        // call from ItemDelivery.Tick() (every frame, before the throttle)
-        public static void Update()
-        {
-            if (Time.unscaledTime < restoreAt) return;
-            if (pending != null) { pending.m_icon = original; pending = null; original = null; }
-            if (pagePending != null) { pagePending.m_sprite = pageOriginal; pagePending = null; pageOriginal = null; }
-
-        }
-
-
-        public static void SwapPage(UI_DescriptionPageData page, Sprite replacement)
-        {
-            if (page == null || replacement == null) return;
-            pageOriginal = page.m_sprite;
-            pagePending = page;
-            page.m_sprite = replacement;
-            restoreAt = Time.unscaledTime + 3f;
-        }
-    }
-
+    /// <summary>
+    /// Owns the queue of items received from the server and grants them to the player.
+    /// Enqueue runs on the socket thread and must not touch game objects.
+    /// Tick/TryDeliver/Grant run on the main thread, and only when the game is in a safe state.
+    /// </summary>
     public static class ItemDelivery
     {
         private static readonly Queue<PendingItem> queue = new Queue<PendingItem>();
-        private static readonly object sync = new object();
+        private static readonly object sync = new object();   // guards queue and nextIndexToEnqueue (socket thread vs main thread)
 
-        private static int nextIndexToEnqueue = 0;
-        private static volatile int pendingCount;
-        private static float nextCheck;
-        private static bool delivering;
+        private static int nextIndexToEnqueue = 0;   // dedupes repeats when the server resends items on reconnect
+        private static volatile int pendingCount;    // lets Tick() check for work without taking the lock
+        private static float nextCheck;              // throttles delivery attempts
+        private static bool delivering;              // re-entrancy guard: a grant can trigger game callbacks that call TryDeliver
 
+        /// <summary>
+        /// True while Grant() is calling into the game. The AddItem/UnlockAbility intercept patches
+        /// check this so they don't swallow our own deliveries as location pickups.
+        /// </summary>
         public static bool IsGranting;
-        private static PlayerComponent currentPlayer;
+
+        private static PlayerComponent currentPlayer;   // captured by the player tick patch, cleared on destroy
         public static void SetPlayer(PlayerComponent p) { currentPlayer = p; }
         public static void ClearPlayer(PlayerComponent p) { if (currentPlayer == p) currentPlayer = null; }
         private static PlayerComponent GetPlayer() => currentPlayer;
@@ -84,6 +38,7 @@ namespace TLCArchipelago_Client
         {
             lock (sync)
             {
+                // Skip anything already delivered in an earlier session (ServerData.Index) or already queued.
                 if (item.Index < Math.Max(nextIndexToEnqueue, ArchipelagoClient.ServerData.Index)) return;
                 nextIndexToEnqueue = item.Index + 1;
                 queue.Enqueue(item);
@@ -91,11 +46,15 @@ namespace TLCArchipelago_Client
             }
         }
 
+        /// <summary>
+        /// Called every frame from the player tick patch (main thread).
+        /// Restores the popup icon, then attempts delivery at most every 0.25s.
+        /// </summary>
         public static void Tick()
         {
-            PopupIcon.Update();
+            PopupIcon.Update();   // must run every frame, before the early returns below
             if (pendingCount == 0) return;
-            float now = UnityEngine.Time.unscaledTime;
+            float now = UnityEngine.Time.unscaledTime;   // unscaled so delivery still ticks while paused
             if (now < nextCheck) return;
             nextCheck = now + 0.25f;
             TryDeliver();
@@ -110,12 +69,14 @@ namespace TLCArchipelago_Client
             {
                 lock (sync)
                 {
+                    // Re-check the game state before every item: a grant (e.g. an ability ritual)
+                    // can change it, and the next item should wait until we're back in gameplay.
                     while (queue.Count > 0 && IsSafe())
                     {
                         var item = queue.Peek();
                         try
                         {
-                            if (!Grant(item)) break;
+                            if (!Grant(item)) break;   // not ready yet: leave it queued and retry next tick
                         }
                         catch (Exception e)
                         {
@@ -124,6 +85,7 @@ namespace TLCArchipelago_Client
                         }
                         queue.Dequeue();
                         pendingCount = queue.Count;
+                        // Advance the index only after a successful grant, so a queued-but-undelivered item isn't lost on exit.
                         ArchipelagoClient.ServerData.Index = item.Index + 1;
                     }
                 }
@@ -134,26 +96,26 @@ namespace TLCArchipelago_Client
             }
         }
 
+        // Only deliver during normal gameplay, not menus, cutscenes, loading or respawn.
         private static bool IsSafe()
         {
             return GameFlow.HasActiveState
                 && GameFlow.ActiveGameFlowState == EGameFlowStateType.InGame;
         }
 
-        // TODO: map AP item ID -> EItemType / EPlayerUnlockableAbility and call your grant logic.
-        // Return false if the player component isn't ready, so the item stays queued.
-        // For now this logs and succeeds so you can test the queue and timing.
+        // Returns true if the item was handled (granted or deliberately dropped), false to retry later.
         private static bool Grant(PendingItem item)
         {
             var player = GetPlayer();
-            if (player == null || player.IsInjectingProgressionData) return false;
+            if (player == null || player.IsInjectingProgressionData) return false;   // player missing or a save is loading
 
             if(!ItemMap.TryGet(item.ItemId, out var info))
             {
+                // Dropped, not retried: an unmapped item would otherwise block the queue forever.
                 Plugin.BepinLogger.LogWarning($"Unknown item ID {item.ItemId} ({item.ItemName}) from {item.Sender}, index {item.Index}");
                 return true;
             }
-            IsGranting = true;
+            IsGranting = true;   // see the IsGranting field; always cleared in the finally below
             try{
                 if (info.Item.HasValue)
                 {
@@ -161,6 +123,7 @@ namespace TLCArchipelago_Client
                 }
                 else if (info.Ability.HasValue)
                 {
+                    // Second bool shows the unlock ritual; the float is the ritual start delay.
                     player.PlayerAbilities.UnlockAbility(info.Ability.Value, true, true, 0f);
                 }
                 Plugin.BepinLogger.LogInfo($"DELIVER: {item.ItemName} (id {item.ItemId}) from {item.Sender}, index {item.Index}");
@@ -171,12 +134,11 @@ namespace TLCArchipelago_Client
                 IsGranting = false;
             }
         }
-        // in ItemDelivery
+
+        // Thin wrapper so patches don't need to reference the client directly.
         public static void ReportCheck(long locationId)
         {
             Plugin.ArchipelagoClient.ReportCheck(locationId);
         }
     }
-
-    
 }

@@ -14,7 +14,14 @@ using Alkawa.Gameplay.Player.Components;
 
 namespace TLCArchipelago_Client
 { 
+    // All game-facing Harmony patches. PatchAll() in Plugin.Load() picks up every class here.
+    // Flow: a pickup trigger sets LocationTracker.PendingLocationKey, then the AddItem/UnlockAbility
+    // intercepts consume it, report the check, and suppress the vanilla reward.
 
+    #region Location tracking
+
+    // Records which pickup location just fired. Postfix, so the game's own trigger logic has already run.
+    // The key is consumed by the intercept patches below; if no AddItem/UnlockAbility follows, it goes stale.
     [HarmonyPatch(typeof(InteractiveElementLogic_CollectibleItem), "TriggerLogic_Internal")]
     public class TriggerLogic_Patch
     {
@@ -26,6 +33,7 @@ namespace TLCArchipelago_Client
         }
     }
 
+    // Same as above, for conversation/cutscene-driven rewards (e.g. the Varham post-fight potion).
     [HarmonyPatch(typeof(InteractiveElementLogic_CutsceneBase), "TriggerLogic_Internal")]
     public class CutsceneTriggerLogic_Patch
     {
@@ -37,92 +45,48 @@ namespace TLCArchipelago_Client
         }
     }
 
- /*   
+    #endregion
 
-    [HarmonyPatch(typeof(PlayerInventorySubComponent), "AddItem",
-        new System.Type[] { typeof(EItemType), typeof(int), typeof(EItemAcquisitionMode) })]
-    public class AddItem_Substitution_Patch
-    {
-        static bool Prefix(PlayerInventorySubComponent __instance, ref EItemType _itemType, ref int _amount, EItemAcquisitionMode _acquisitionMode, ref int __result)
-        {
-            var key = LocationTracker.PendingLocationKey;
+    #region Check interception
 
-            // Genuine swap case: this location's item grant is replaced with an
-            // ability grant instead — the player gets ONE reward, not both.
-            if (key != null && Substitutions.EarlyAbilityGrants.TryGetValue(key, out var earlyAbility))
-            {
-                Plugin.BepinLogger.LogInfo($"SWAPPING ITEM FOR ABILITY: {earlyAbility} (location={key}) — original item grant skipped");
-                __instance.m_playerComponent.PlayerAbilities.UnlockAbility(earlyAbility, true, true, 0f);
-                LocationTracker.PendingLocationKey = null;
-                __result = 0; // no item was actually added
-                return false; // skip the original AddItem entirely
-            }
-
-            if (key != null && Substitutions.ItemOverrides.TryGetValue(key, out var replacement))
-            {
-                Plugin.BepinLogger.LogInfo($"SUBSTITUTING ITEM: {_itemType} -> {replacement} (location={key})");
-                _itemType = replacement;
-            }
-
-            LocationTracker.PendingLocationKey = null;
-            return true; // let the (possibly substituted) item grant proceed normally
-        }
-    }
-
-    // Case 1 (REPLACE): rewrites which ability actually gets unlocked at a location
-    // that naturally calls UnlockAbility already.
-    [HarmonyPatch(typeof(PlayerAbilitiesSubComponent), "UnlockAbility")]
-    public class UnlockAbility_Substitution_Patch
-    {
-        static void Prefix(ref EPlayerUnlockableAbility _ability)
-        {
-            var key = LocationTracker.PendingLocationKey;
-            if (key != null && Substitutions.AbilityOverrides.TryGetValue(key, out var replacement))
-            {
-                Plugin.BepinLogger.LogInfo($"SUBSTITUTING ABILITY: {_ability} -> {replacement} (location={key})");
-                _ability = replacement;
-            }
-            LocationTracker.PendingLocationKey = null;
-        }
-    }*/
-
+    // Turns a mapped item pickup into an AP location check and suppresses the vanilla reward.
+    // The reward itself is delivered later through ItemDelivery, whatever the server decides it is.
     [HarmonyPatch(typeof(PlayerInventorySubComponent), "AddItem", new System.Type[] { typeof(EItemType), typeof(int), typeof(EItemAcquisitionMode) })]
     public class AddItem_Intercept_Patch
     {
         static bool Prefix(PlayerInventorySubComponent __instance, EItemType _itemType, int _amount, EItemAcquisitionMode _acquisitionMode, ref int __result)
         {
-            if (ItemDelivery.IsGranting) return true;
+            if (ItemDelivery.IsGranting) return true;   // our own delivery: let it through untouched
 
             var key = LocationTracker.PendingLocationKey;
-            if (key == null) return true;
-            LocationTracker.PendingLocationKey = null;
+            if (key == null) return true;               // not tied to a tracked location (crystals, etc.): vanilla
+            LocationTracker.PendingLocationKey = null;  // consume first, so a stale key can't swallow a later unrelated pickup
 
-            if (!LocationMap.TryGetId(key, out long locationId)) return true;
+            if (!LocationMap.TryGetId(key, out long locationId)) return true;   // unmapped location: vanilla
 
             ItemDelivery.ReportCheck(locationId);
+
+            // Cancelling AddItem also cancels the ritual (popup) it would have started, which leaves the
+            // player frozen. So for items that normally get a full popup, start the ritual ourselves.
             if (RitualPolicy.NeedsFullRitual(_itemType))
             {
-
                 var ritual = __instance.m_playerComponent.PlayerRitual;
-                var info = ritual.GetRitualInfo(EPlayerRitual.PotionReveal);
-                //PopupIcon.Swap(info, ApSprite.Get());  
-                PopupText.Arm("Archipelago Check", "Check Sent", "Your item was sent into the multiworld.");                
+                PopupText.Arm("Archipelago Check", "Check Sent", "Your item was sent into the multiworld.");
+                // PotionReveal is the only ritual ID observed so far, so every full-ritual item uses it for now.
                 ritual.InternalTryStartRitual(EPlayerRitual.PotionReveal, _itemType, 0f, false);
+
+                // The live description page only exists after the ritual starts; swap its sprite for the AP logo.
                 var ri = ritual.StateInfo.m_currentRitualInformation;
                 var page = ri?.m_descriptionPageData?.TryCast<UI_DescriptionPageData>();
                 PopupIcon.SwapPage(page, ApSprite.Get());
-               // __instance.m_playerComponent.PlayerRitual.InternalTryStartRitual(EPlayerRitual.PotionReveal, _itemType, 0f, false);
-                //var info = __instance.m_playerComponent.PlayerRitual.GetRitualInfo(EPlayerRitual.PotionReveal);
-                //Plugin.BepinLogger.LogInfo($"PotionReveal icon = {info?.m_icon?.name ?? "null"}");
-
-            // PotionReveal is the only ID observed so far
-            //    __instance.m_playerComponent.PlayerRitual.InternalTryStartRitual(EPlayerRitual.PotionReveal, _itemType, 0f, false);
             }
-            __result = _amount;
-            return false;
+            __result = _amount;   // report "added" to the caller even though nothing was
+            return false;         // skip the original AddItem
         }
     }
 
+    // Same idea for ability pickups. Known gap: this cancels the unlock ritual too, and unlike
+    // AddItem above it doesn't start a replacement (the SimorghFeather ritual would be the one to use).
     [HarmonyPatch(typeof(PlayerAbilitiesSubComponent), "UnlockAbility")]
     public class UnlockAbility_Intercept_Patch
     {
@@ -141,6 +105,14 @@ namespace TLCArchipelago_Client
         }
     }
 
+    #endregion
+
+    #region Delivery timing (GameFlow)
+
+    // These four patches only exist to give ItemDelivery extra chances to run. PlayerTick_Patch below
+    // already ticks every frame, so they are candidates for removal. Re-test the Dash delivery and
+    // "send an item while paused" if you take them out.
+    // Note ActiveGameFlowState_Patch is a postfix on a getter that ItemDelivery.IsSafe() also calls.
     [HarmonyPatch(typeof(GameFlow), "get_ActiveGameFlowState")]
     public class ActiveGameFlowState_Patch
     {
@@ -150,6 +122,7 @@ namespace TLCArchipelago_Client
         }
     }
 
+    // PopState has two overloads, so each needs its parameter types spelled out or Harmony reports an ambiguous match.
     [HarmonyPatch(typeof(GameFlow), nameof(GameFlow.PushState), new[] { typeof(EGameFlowStateType) })]
     public class PushState_Patch
     {
@@ -168,67 +141,86 @@ namespace TLCArchipelago_Client
         static void Postfix() => ItemDelivery.TryDeliver();
     }
 
+    #endregion
+
+    #region Player capture and tick
+
+    // Main per-frame hook: captures the player for ItemDelivery and drives its Tick.
     [HarmonyPatch(typeof(PlayerComponent), nameof(PlayerComponent.OnAnimatorMoveProxy))]
     public class PlayerTick_Patch
     {
         static void Postfix(PlayerComponent __instance)
         {
-            if (__instance.IsPlayerDoppleganger) return;
+            if (__instance.IsPlayerDoppleganger) return;   // a second PlayerComponent can exist; ignore it
             ItemDelivery.SetPlayer(__instance);
-            RitualPolicy.Init(__instance.PlayerRitualInfoConfig);
+            RitualPolicy.Init(__instance.PlayerRitualInfoConfig);   // builds the popup rules once; no-op after that
             ItemDelivery.Tick();
         }
 
     }
 
+    // Clears the stored player so ItemDelivery never holds a destroyed object.
     [HarmonyPatch(typeof(PlayerComponent), nameof(PlayerComponent.OnAlkawaDestroy))]
     public class PlayerDestroy_Patch
     {
         static void Postfix(PlayerComponent __instance) => ItemDelivery.ClearPlayer(__instance);
     }
-//    public static class ShopSubstitutions
-//{
-//    // Keyed by shop location, then original item -> replacement item.
-//    public static readonly Dictionary<string, Dictionary<EItemType, EItemType>> Overrides =
-//        new Dictionary<string, Dictionary<EItemType, EItemType>>
-//    {
-//        {
-//            "NPC_ShopKeeper_Cartographer Old_Lady Variant@(161.72, 37.50, 2.00)",
-//            new Dictionary<EItemType, EItemType>
-//            {
-//                { EItemType.SeedOfKnowledge, EItemType.StoneOfKnowledge_Prayer },
-//            }
-//        },
-//    };
-//}
-/*
-//[HarmonyPatch(typeof(InteractiveElementLogic_ShopKeeper), "OpenShopMenu")]
-public class OpenShopMenu_Substitution_Patch
-{
-    static void Prefix(InteractiveElementLogic_ShopKeeper __instance)
+
+    #endregion
+
+    #region Shop substitution (shelved)
+
+    // Shelved: swapping the items a shopkeeper sells. Substituting the catalog in OpenShopMenu crashed
+    // the game (mutating the shop UI data), and purchases still need handling (OnBuyItem).
+    // The tracker plugin already logs full shop catalogs, and the diagnostics plugin has an
+    // OpenShopMenu patch plus OnBuyItem stack-trace patches for investigating this.
+    // Left commented out so it doesn't compile or patch.
+    //
+    //    public static class ShopSubstitutions
+    //{
+    //    // Keyed by shop location, then original item -> replacement item.
+    //    public static readonly Dictionary<string, Dictionary<EItemType, EItemType>> Overrides =
+    //        new Dictionary<string, Dictionary<EItemType, EItemType>>
+    //    {
+    //        {
+    //            "NPC_ShopKeeper_Cartographer Old_Lady Variant@(161.72, 37.50, 2.00)",
+    //            new Dictionary<EItemType, EItemType>
+    //            {
+    //                { EItemType.SeedOfKnowledge, EItemType.StoneOfKnowledge_Prayer },
+    //            }
+    //        },
+    //    };
+    //}
+    /*
+    //[HarmonyPatch(typeof(InteractiveElementLogic_ShopKeeper), "OpenShopMenu")]
+    public class OpenShopMenu_Substitution_Patch
     {
-        var key = LocationTracker.BuildKey(__instance.m_Owner);
-        if (key == null || !ShopSubstitutions.Overrides.TryGetValue(key, out var itemMap))
-            return;
-
-        SwapList(__instance.m_availableItems, itemMap);
-        SwapList(__instance.m_availableUpgrades, itemMap);
-
-        static void SwapList(Il2CppSystem.Collections.Generic.List<ShopItemTrade> list, Dictionary<EItemType, EItemType> itemMap)
+        static void Prefix(InteractiveElementLogic_ShopKeeper __instance)
         {
-            if (list == null) return;
-            for (int i = 0; i < list.Count; i++)
+            var key = LocationTracker.BuildKey(__instance.m_Owner);
+            if (key == null || !ShopSubstitutions.Overrides.TryGetValue(key, out var itemMap))
+                return;
+
+            SwapList(__instance.m_availableItems, itemMap);
+            SwapList(__instance.m_availableUpgrades, itemMap);
+
+            static void SwapList(Il2CppSystem.Collections.Generic.List<ShopItemTrade> list, Dictionary<EItemType, EItemType> itemMap)
             {
-                var trade = list[i];
-                var current = trade?.m_item?.m_itemId;
-                if (current.HasValue && itemMap.TryGetValue(current.Value, out var replacement))
+                if (list == null) return;
+                for (int i = 0; i < list.Count; i++)
                 {
-                    Plugin.BepinLogger.LogInfo($"SUBSTITUTING SHOP ITEM: {current.Value} -> {replacement}");
-                    trade.m_item.m_itemId = replacement;
+                    var trade = list[i];
+                    var current = trade?.m_item?.m_itemId;
+                    if (current.HasValue && itemMap.TryGetValue(current.Value, out var replacement))
+                    {
+                        Plugin.BepinLogger.LogInfo($"SUBSTITUTING SHOP ITEM: {current.Value} -> {replacement}");
+                        trade.m_item.m_itemId = replacement;
+                    }
                 }
             }
         }
-    }
-}*/
+    }*/
+
+    #endregion
 
 }

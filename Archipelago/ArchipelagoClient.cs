@@ -27,12 +27,17 @@ public class ArchipelagoClient
     public static ArchipelagoData ServerData = new();
     private DeathLinkHandler DeathLinkHandler;
     private ArchipelagoSession session;
+    // Stops a second reconnect loop starting while one is already running.
     private bool alreadyRunning = false;
     
+    // Set by Disconnect(), cleared only in Connect(). The socket handlers check it so a
+    // deliberate disconnect doesn't trigger the reconnect loop.
     private bool intentionalDisconnect = false;
+    // Lets CancelReconnect() abort the delay between reconnect attempts.
     private CancellationTokenSource reconnectCTS;
-    //private Queue<Item> itemQueue = new Queue<Item>();
 
+    // Guards ServerData.CheckedLocations. ReportCheck runs on the main thread (game patches)
+    // while HandleConnectResult runs on a ThreadPool thread, so both sides take this lock.
     private readonly object checkLock = new object();
 
 
@@ -82,7 +87,7 @@ public class ArchipelagoClient
                     session.TryConnectAndLogin(
                         Game,
                         ServerData.SlotName,
-                        ItemsHandlingFlags.AllItems, 
+                        ItemsHandlingFlags.AllItems, // all items, including ones from our own world: every reward goes through ItemDelivery
                         new Version(APVersion),
                         password: ServerData.Password,
                         requestSlotData: false // ServerData.NeedSlotData
@@ -111,6 +116,7 @@ public class ArchipelagoClient
             Authenticated = true;
 
             DeathLinkHandler = new(session.CreateDeathLinkService(), ServerData.SlotName);
+            // Re-send every stored check on each connect, so checks made while offline aren't lost.
             session.Locations.CompleteLocationChecksAsync(SnapshotChecks());
             outText = $"Successfully connected to {ServerData.Uri} as {ServerData.SlotName}!";
             SendMessage("Hello from the lost crown!");
@@ -126,6 +132,8 @@ public class ArchipelagoClient
             Plugin.BepinLogger.LogError(outText);
 
             Authenticated = false;
+            // Disconnect() sets intentionalDisconnect, so a failed login (bad slot, wrong password,
+            // or server not running yet) does NOT start the reconnect loop.
             Disconnect();
 
         }
@@ -162,9 +170,14 @@ public class ArchipelagoClient
     /// <param name="helper">item helper which we can grab our item from</param>
     private void OnItemReceived(ReceivedItemsHelper helper)
     {
+        // [socket thread] Must not touch game objects: items are converted to plain data and queued,
+        // and ItemDelivery grants them later on the main thread when the game is in a safe state.
+        // Drain the whole batch, in case the library raises this event once per packet rather than once per item.
         var batch = new List<ItemInfo>();
         while (helper.Any()) batch.Add(helper.DequeueItem());
 
+        // Index of the first drained item in the server's full item list. ItemDelivery uses it
+        // to skip items already delivered in an earlier session (the server resends from 0 on login).
         int firstIndex = helper.AllItemsReceived.Count - batch.Count;
         for (int i = 0; i < batch.Count; i++)
         {
@@ -172,7 +185,11 @@ public class ArchipelagoClient
             ItemDelivery.Enqueue(new PendingItem(it.ItemId, it.ItemName, it.Player.Name, firstIndex + i));
         }
     }
-    // in ArchipelagoClient
+    /// <summary>
+    /// Records a location check and sends it to the server. Called by the AddItem/UnlockAbility
+    /// intercept patches when a mapped location is picked up. The check is stored first, then sent,
+    /// so if we're offline it goes out on the next connect (see HandleConnectResult).
+    /// </summary>
     public void ReportCheck(long locationId)
     {
         lock (checkLock)
@@ -181,6 +198,7 @@ public class ArchipelagoClient
                 ServerData.CheckedLocations.Add(locationId);
         }
 
+        // A failed send must never throw back into game code (this runs inside a Harmony prefix).
         try
         {
             var s = session;                      // local copy: another thread may null it
@@ -190,6 +208,7 @@ public class ArchipelagoClient
         catch (Exception e) { Plugin.BepinLogger.LogError(e); }
     }
 
+    // Copy of the checked locations taken under the lock, safe to use from any thread.
     private long[] SnapshotChecks()
     {
         lock (checkLock) { return ServerData.CheckedLocations.ToArray(); }
@@ -228,6 +247,8 @@ public class ArchipelagoClient
         AttemptReconnectWithBackoff();
     }
 
+    // Retries Connect() with growing delays (10s, 20s, 30s, then 60s) until authenticated.
+    // Both socket handlers above call this: an abrupt server kill raises ErrorReceived, not SocketClosed.
     private async void AttemptReconnectWithBackoff()
     {
         if(alreadyRunning) return;
@@ -259,6 +280,7 @@ public class ArchipelagoClient
         }
     }
 
+    // Stops the reconnect loop (meant for a future UI button).
     public void CancelReconnect()
     {
         reconnectCTS?.Cancel();

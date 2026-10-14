@@ -10,6 +10,7 @@ using ArchipelagoBepin6Template.Unity.IL2Cpp.Archipelago;
 using ArchipelagoBepin6Template.Unity.IL2Cpp.Utils;
 using System.Threading.Tasks;
 
+// Likely to be deleted, kept for now as a reference.
 namespace TLCArchipelago_Client
 {    public static class Substitutions
     {
@@ -34,18 +35,5 @@ namespace TLCArchipelago_Client
             { "TRG_Interactor_PotionLoot@(-83.59, -26.44, 0.00)", EPlayerUnlockableAbility.Chakram },
         };
         
-    }
-    
-
-    public static class LocationTracker
-    {
-        public static string PendingLocationKey;
-
-        public static string BuildKey(GameObject owner)
-        {
-            if (owner == null) return null;
-            var pos = owner.transform.position;
-            return $"{owner.name}@({pos.x:F2}, {pos.y:F2}, {pos.z:F2})";
-        }
     }
 }
