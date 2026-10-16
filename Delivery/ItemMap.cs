@@ -29,6 +29,7 @@ namespace TLCArchipelago_Client
             { 3, new GrantInfo { Item = EItemType.QuestItem_CannonBall, Amount = 1 } }, // Cannonball
             { 4, new GrantInfo { Ability = EPlayerUnlockableAbility.AirDash, Amount = 1 } }, // Dash Ability
             { 5, new GrantInfo { Item = EItemType.Crystal, Amount = 1 } },   // filler; not in the current item pool
+            {6, new GrantInfo { Ability = EPlayerUnlockableAbility.Bow, Amount = 1} }, // Bow Ability
         };
 
         /// <summary>Looks up the grant for an AP item ID. Returns false if the ID isn't mapped.</summary>

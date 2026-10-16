@@ -26,7 +26,7 @@ public class ArchipelagoData
     public ArchipelagoData()
     {
         Uri = "localhost";
-        SlotName = "Player2";
+        SlotName = "Player1";
         CheckedLocations = new();
     }
 

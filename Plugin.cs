@@ -34,7 +34,7 @@ namespace TLCArchipelago_Client
             ArchipelagoClient = new ArchipelagoClient();
             // Hardcoded for testing. Replace with a config file or in-game UI later.
             ArchipelagoClient.ServerData.Uri = "localhost:38281";
-            ArchipelagoClient.ServerData.SlotName = "Player2";   // must match the name in the player YAML
+            ArchipelagoClient.ServerData.SlotName = "Player1";   // must match the name in the player YAML
             ArchipelagoClient.ServerData.Password = "";
             ArchipelagoConsole.Awake();
 

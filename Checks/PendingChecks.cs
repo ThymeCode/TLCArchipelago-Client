@@ -85,7 +85,8 @@ namespace TLCArchipelago_Client
             try
             {
                 var ritual = player.PlayerRitual;
-                ritual.InternalTryStartRitual(EPlayerRitual.PotionReveal, item, 0f, false);
+                bool started = ritual.InternalTryStartRitual(EPlayerRitual.PotionReveal, item, 0f, false);
+                Plugin.BepinLogger.LogInfo($"PendingCheck: generic ritual started={started}");
                 var ri = ritual.StateInfo.m_currentRitualInformation;
                 var page = ri?.m_descriptionPageData?.TryCast<UI_DescriptionPageData>();
                 PopupText.Arm(page, title, header, desc, "");   // "" hides the tutorial hint

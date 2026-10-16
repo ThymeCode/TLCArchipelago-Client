@@ -44,6 +44,17 @@ namespace TLCArchipelago_Client
             Plugin.BepinLogger.LogInfo($"CUTSCENE TRIGGERED: location='{key}'");
         }
     }
+    // A few items are triggered by a TimelineLauncher (Namely the bow). Otherwise same as above.
+    [HarmonyPatch(typeof(InteractiveElementLogic_TimelineLauncher), "TriggerLogic_Internal")]
+    public class TimelineTriggerLogic_Patch
+    {
+        static void Postfix(InteractiveElementLogic_TimelineLauncher __instance, ETriggerLogicType _triggerType)
+        {
+            var key = LocationTracker.BuildKey(__instance.m_Owner);
+            LocationTracker.PendingLocationKey = key;
+            Plugin.BepinLogger.LogInfo($"TIMELINE TRIGGERED: location='{key}'");
+        }
+    }
 
     #endregion
 
@@ -92,18 +103,31 @@ namespace TLCArchipelago_Client
     {
         static bool Prefix()
         {
-            if(ItemDelivery.IsGranting) return true;
+            if (ItemDelivery.IsGranting) return true;
 
             var key = LocationTracker.PendingLocationKey;
             if (key == null) return true;
             LocationTracker.PendingLocationKey = null;
 
-            if(!LocationMap.TryGetId(key, out long locationId)) return true;
+            if (!LocationMap.TryGetId(key, out long locationId)) return true;
+
+            var player = ItemDelivery.GetPlayer();
+            if (player != null)
+            {
+                // HealingPotion is a dummy item for the PotionReveal frame; its text and icon are replaced anyway.
+                if (PlacementCache.TryGet(locationId, out var placement) && !placement.Own)
+                    PendingCheck.ShowGeneric(player, EItemType.HealingPotion, placement.ItemName, "Item Sent",
+                        $"Sent to {placement.Player} ({placement.Game}).");
+                else
+                    PendingCheck.Begin(locationId, EItemType.HealingPotion);   // before ReportCheck
+            }
 
             ItemDelivery.ReportCheck(locationId);
             return false;
         }
     }
+
+
 
     #endregion
 

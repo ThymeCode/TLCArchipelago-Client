@@ -17,6 +17,7 @@ namespace TLCArchipelago_Client
             {"TRG_Interactor_Conversation_Varham_PostFight@(139.62, 16.21, 0.00)", 1},   // Tutorial Vahram Potion
             {"TRG_KIN_THO_CIN_Palace_Ceremony@(25.50, 0.00, 0.00)", 2},                   // Thomyris Scarf Gift
             {"TRG_IASpawn@(106.34, 4.49, 0.00)", 3},                                      // Piercing Attack Cutscene
+            {"TRG_HYR_AUT_CIN_Reward_Bow@(17.50, 5.00, 0.00)", 4},                        // Hyrkanian Bow Reward
         };
 
         /// <summary>

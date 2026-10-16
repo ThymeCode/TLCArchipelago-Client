@@ -31,7 +31,7 @@ namespace TLCArchipelago_Client
         private static PlayerComponent currentPlayer;   // captured by the player tick patch, cleared on destroy
         public static void SetPlayer(PlayerComponent p) { currentPlayer = p; }
         public static void ClearPlayer(PlayerComponent p) { if (currentPlayer == p) currentPlayer = null; }
-        private static PlayerComponent GetPlayer() => currentPlayer;
+        public static PlayerComponent GetPlayer() => currentPlayer;
 
         // Socket thread: plain data only, no game calls.
         public static void Enqueue(PendingItem item)
