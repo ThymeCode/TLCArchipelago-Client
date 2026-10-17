@@ -31,6 +31,7 @@ namespace TLCArchipelago_Client
         public override void Load()
         {
             BepinLogger = base.Log;   // set first: the patches and client log through it
+            SaveLocation.Init(Config);   // Config is BasePlugin's built-in config file
             ArchipelagoClient = new ArchipelagoClient();
             // Hardcoded for testing. Replace with a config file or in-game UI later.
             ArchipelagoClient.ServerData.Uri = "localhost:38281";

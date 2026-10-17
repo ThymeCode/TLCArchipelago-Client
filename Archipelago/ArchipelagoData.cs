@@ -37,6 +37,19 @@ public class ArchipelagoData
         Password = password;
         CheckedLocations = new();
     }
+    public int GetIndex()
+    {
+        return Index;
+    }
+
+    public string GetSlotName()
+    {
+        return SlotName;
+    }
+    public string GetSeed()
+    {
+        return seed;
+    }
 
     /// <summary>
     /// assigns the slot data and seed to our data handler. any necessary setup using this data can be done here.
