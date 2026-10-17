@@ -26,7 +26,7 @@ namespace TLCArchipelago_Client
                 if (__instance._saveType != ESaveType.SaveGame) return;
                 int saveNumber = SaveLocation.GetSlotNumber(__instance._slotType);
                 if (saveNumber == 0) return;
-                int index = ArchipelagoClient.ServerData.getIndex(); 
+                int index = ArchipelagoClient.ServerData.GetIndex(); 
                 // Plain values only; the container itself must not be touched after the hook returns.
                 Task.Delay(500).ContinueWith(_ => WriteState(saveNumber, index));
             }
