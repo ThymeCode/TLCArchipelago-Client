@@ -117,6 +117,12 @@ public class ArchipelagoClient
             Authenticated = true;
 
             DeathLinkHandler = new(session.CreateDeathLinkService(), ServerData.SlotName);
+            lock (checkLock)
+            {
+                foreach (var id in session.Locations.AllLocationsChecked)
+                    if (!ServerData.CheckedLocations.Contains(id))
+                        ServerData.CheckedLocations.Add(id);
+            }
             // Re-send every stored check on each connect, so checks made while offline aren't lost.
             session.Locations.CompleteLocationChecksAsync(SnapshotChecks());
             outText = $"Successfully connected to {ServerData.Uri} as {ServerData.SlotName}!";
@@ -176,7 +182,7 @@ public class ArchipelagoClient
         // Drain the whole batch, in case the library raises this event once per packet rather than once per item.
         var batch = new List<ItemInfo>();
         while (helper.Any()) batch.Add(helper.DequeueItem());
-
+        Plugin.BepinLogger.LogInfo($"OnItemReceived: all={helper.AllItemsReceived.Count}");
         // Index of the first drained item in the server's full item list. ItemDelivery uses it
         // to skip items already delivered in an earlier session (the server resends from 0 on login).
         int firstIndex = helper.AllItemsReceived.Count - batch.Count;
@@ -285,5 +291,24 @@ public class ArchipelagoClient
     public void CancelReconnect()
     {
         reconnectCTS?.Cancel();
+    }
+
+    public void RequestResync()
+    {
+        var s = session;
+        if (Authenticated && s != null)
+        {
+            try
+            {
+                s.Socket.SendPacketAsync(new SyncPacket());
+            }
+            catch(System.Exception e)
+            {
+                Plugin.BepinLogger.LogError("Resync request failed: " + e);
+            }
+            
+        }
+
+
     }
 }

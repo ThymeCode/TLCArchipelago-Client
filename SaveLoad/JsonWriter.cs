@@ -2,6 +2,7 @@ using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 using ArchipelagoBepin6Template.Unity.IL2Cpp.Archipelago;
+using Alkawa.Engine;
 
 namespace TLCArchipelago_Client
 {
@@ -26,9 +27,8 @@ namespace TLCArchipelago_Client
 
             try
             {
-                var json = JsonConvert.SerializeObject(new
+                var json = JsonConvert.SerializeObject(new ApSaveState
                 {
-                    Version = 1,
                     Seed = seed,
                     SlotName = d.GetSlotName(),
                     Index = index
@@ -42,6 +42,21 @@ namespace TLCArchipelago_Client
             catch (System.Exception e)
             {
                 Plugin.BepinLogger.LogError($"Failed to write state to {path}: {e.Message}");
+            }
+        }
+
+        public static ApSaveState ReadStateFromFile(string path)
+        {
+            try
+            {
+                if(!File.Exists(path)) return null;
+                
+                return JsonConvert.DeserializeObject<ApSaveState>(File.ReadAllText(path, Encoding.UTF8));
+            }
+            catch(System.Exception e)
+            {
+                Plugin.BepinLogger.LogError($"Failed to read state from {path}: {e.Message}");
+                return null;
             }
         }
     }

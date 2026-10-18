@@ -165,6 +165,21 @@ namespace TLCArchipelago_Client
         static void Postfix() => ItemDelivery.TryDeliver();
     }
 
+    [HarmonyPatch(typeof(GameFlow), nameof(GameFlow.PushState), new[] { typeof(EGameFlowStateType) })]
+    public class NewGameReset_Patch
+    {
+        static void Postfix(EGameFlowStateType _type)
+        {
+            Plugin.BepinLogger.LogInfo($"PushState: {_type}");   // temporary: shows which states fire, and in what order
+    
+            if (_type == EGameFlowStateType.NewGame || _type == EGameFlowStateType.QuickNewGame)
+            {
+                Plugin.BepinLogger.LogInfo($"New game ({_type}): resetting AP state");
+                LoadStateUpdate_Patch.ApplyLoadedState(null);
+            }
+        }
+    }
+
     #endregion
 
     #region Player capture and tick
@@ -191,6 +206,7 @@ namespace TLCArchipelago_Client
     }
 
     #endregion
+
 
     #region Shop substitution (shelved)
 

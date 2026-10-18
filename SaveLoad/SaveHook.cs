@@ -16,6 +16,7 @@ using System.IO;
 
 namespace TLCArchipelago_Client
 {
+    
     [HarmonyPatch(typeof(LoadSaveContainer), nameof(LoadSaveContainer.Write))]
     public class SaveStateUpdate_Patch
     {
@@ -55,12 +56,66 @@ namespace TLCArchipelago_Client
     [HarmonyPatch(typeof(LoadSaveContainer), nameof(LoadSaveContainer.ReadWithHeaderAndModule))]
     public class LoadStateUpdate_Patch
     {
+        public static ApSaveState PendingLoad;
+        public static string fullSaveFolder = "";
+
+        public static void ApplyLoadedState(ApSaveState state)
+        {
+            var d = ArchipelagoClient.ServerData;
+            bool valid = state != null
+                      && state.Seed == d.GetSeed()
+                      && state.SlotName == d.GetSlotName();
+            int index = valid ? state.Index : 0;
+            d.Index = index;
+            Plugin.BepinLogger.LogInfo($"State is null: {state == null}, valid={valid}, Slot: {state?.SlotName}, Index: {state?.Index}, applied={index}, Path: {fullSaveFolder}");
+            ItemDelivery.ResetForLoad(index);
+            Plugin.ArchipelagoClient.RequestResync();
+        }
         static void Postfix(LoadSaveContainer __instance)
         {
-            if (__instance._saveType != ESaveType.SaveGame) return;
+            Plugin.BepinLogger.LogInfo($"Loaded a save, current state: {GameFlow.ActiveGameFlowState}");
+            try
+            {
+                if (__instance._saveType != ESaveType.SaveGame) return;
+                int saveNumber = SaveLocation.GetSlotNumber(__instance._slotType);
+                if (saveNumber == 0)
+                {
+                  return;
+                } 
+                string saveFolder = SaveLocation.GetSaveFolder(saveNumber);
+                if (saveFolder == null)
+                {
+                    ApplyLoadedState(null);
+                    return;
+                }
+                string marker = Path.Combine(saveFolder, "lastSavedFolder.txt");
+                if (!File.Exists(marker))
+                {
+                    ApplyLoadedState(null);
+                    return;
+                }
+                fullSaveFolder = Path.Combine(saveFolder, "Save_" + File.ReadAllText(marker).Trim());
+                if (!Directory.Exists(fullSaveFolder))
+                {
+                    ApplyLoadedState(null);
+                    return;
+                }
+                
+                var state = JsonWriter.ReadStateFromFile(Path.Combine(fullSaveFolder, "ArchipelagoSaveState.json"));
+                
+                if (ArchipelagoClient.ServerData.GetSeed() == null)
+                {
+                    PendingLoad = state ?? new ApSaveState();
+                }
+                else
+                {
+                    ApplyLoadedState(state);
+                }
+                
+            }
+            catch (System.Exception e) { Plugin.BepinLogger.LogError(e);}
 
         }
     }
-
 }
 

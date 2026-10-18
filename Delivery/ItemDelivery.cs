@@ -4,6 +4,8 @@ using Alkawa.Engine;
 using ArchipelagoBepin6Template.Unity.IL2Cpp.Archipelago;
 using Alkawa.Gameplay.Player.Components; 
 using Alkawa.Gameplay;
+using UnityEngine;
+using System.ComponentModel.DataAnnotations;
 
 namespace TLCArchipelago_Client
 {
@@ -27,6 +29,7 @@ namespace TLCArchipelago_Client
         /// check this so they don't swallow our own deliveries as location pickups.
         /// </summary>
         public static bool IsGranting;
+        public static float timestamp;
 
         private static PlayerComponent currentPlayer;   // captured by the player tick patch, cleared on destroy
         public static void SetPlayer(PlayerComponent p) { currentPlayer = p; }
@@ -36,10 +39,16 @@ namespace TLCArchipelago_Client
         // Socket thread: plain data only, no game calls.
         public static void Enqueue(PendingItem item)
         {
+            Plugin.BepinLogger.LogInfo($"Started Enqueue for {item.ItemName} at {item.Index}");
             lock (sync)
             {
                 // Skip anything already delivered in an earlier session (ServerData.Index) or already queued.
-                if (item.Index < Math.Max(nextIndexToEnqueue, ArchipelagoClient.ServerData.Index)) return;
+            
+                if (item.Index < Math.Max(nextIndexToEnqueue, ArchipelagoClient.ServerData.Index))
+                {
+                    Plugin.BepinLogger.LogInfo($"Already logged {item.ItemName} with index {item.Index}, Server index: {ArchipelagoClient.ServerData.GetIndex()}, nextIndexToEnqueue: {nextIndexToEnqueue}");
+                    return;
+                } 
                 nextIndexToEnqueue = item.Index + 1;
                 queue.Enqueue(item);
                 pendingCount = queue.Count;
@@ -64,7 +73,7 @@ namespace TLCArchipelago_Client
         // Main thread: called from Tick and from the state-change postfixes.
         public static void TryDeliver()
         {
-            if (pendingCount == 0 || delivering) return;
+            if (pendingCount == 0 || delivering || Time.unscaledTime - timestamp < 1) return;
             delivering = true;
             try
             {
@@ -120,11 +129,13 @@ namespace TLCArchipelago_Client
             try{
                 if (info.Item.HasValue)
                 {
+                    Plugin.BepinLogger.LogInfo("Trying to unlock item");
                     player.PlayerInventory.AddItem(info.Item.Value, info.Amount, EItemAcquisitionMode.Loot);
                 }
                 else if (info.Ability.HasValue)
                 {
                     // Second bool shows the unlock ritual; the float is the ritual start delay.
+                    Plugin.BepinLogger.LogInfo("Trying to unlock ability");
                     player.PlayerAbilities.UnlockAbility(info.Ability.Value, true, true, 0f);
                 }
                 Plugin.BepinLogger.LogInfo($"DELIVER: {item.ItemName} (id {item.ItemId}) from {item.Sender}, index {item.Index}");
@@ -135,6 +146,20 @@ namespace TLCArchipelago_Client
             {
                 IsGranting = false;
             }
+        }
+
+        public static void ResetForLoad(int index)
+        {
+            Plugin.BepinLogger.LogInfo("Starting state reset");
+            timestamp = Time.unscaledTime;
+            lock (sync)
+            {
+                queue.Clear();
+                pendingCount = 0;
+                nextIndexToEnqueue = index;
+            }
+                PendingCheck.ClearPending();
+
         }
 
         // Thin wrapper so patches don't need to reference the client directly.

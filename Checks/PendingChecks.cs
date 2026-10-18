@@ -94,5 +94,12 @@ namespace TLCArchipelago_Client
             }
             catch (System.Exception e) { Plugin.BepinLogger.LogError(e); }
         }
+
+        public static void ClearPending()
+        {
+            active = false;
+            echoGranted = false;
+            loggedState = false;
+        }
     }
 }
