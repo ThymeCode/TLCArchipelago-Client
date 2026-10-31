@@ -69,26 +69,41 @@ namespace TLCArchipelago_Client
         {
             if (ItemDelivery.IsGranting) return true;   // our own delivery: let it through untouched
 
+            bool isShop = _acquisitionMode == EItemAcquisitionMode.Shop;
+
+            // Shop purchases build their key from the stored shop key, since PendingLocationKey is consumed by the first purchase.
+            if (isShop && ShopTracker.CurrentShopKey != null)
+                LocationTracker.PendingLocationKey = ShopTracker.CurrentShopKey + "#" + _itemType;
+
             var key = LocationTracker.PendingLocationKey;
-            if (key == null) return true;               // not tied to a tracked location (crystals, etc.): vanilla
-            LocationTracker.PendingLocationKey = null;  // consume first, so a stale key can't swallow a later unrelated pickup
+            if (key == null) return true;               // not tied to a tracked location: vanilla
+            LocationTracker.PendingLocationKey = null;  // consume first, so a stale key can't swallow a later pickup
 
             if (!LocationMap.TryGetId(key, out long locationId)) return true;   // unmapped location: vanilla
 
-            // Cancelling AddItem also cancels the ritual (popup) it would have started, which leaves the
-            // player frozen. So for items that normally get a full popup, make sure some ritual still plays.
-            // Decide now, from slot data. Own item: wait for the server's echo, so Grant() gives it and the
-            // game builds its own popup. Another game's item: generic popup straight away.
-            if (RitualPolicy.NeedsFullRitual(_itemType))
+            PlacementCache.TryGet(locationId, out var placement);
+            bool otherGame = placement != null && !placement.Own;
+
+            if (isShop)
             {
-                if (PlacementCache.TryGet(locationId, out var placement) && !placement.Own)
+                if (otherGame)
+                    PendingCheck.GenericShopRitual(__instance.m_playerComponent, _itemType,
+                        placement.ItemName, "Item Sent", $"Sent to {placement.Player} ({placement.Game}).");
+                else
+                    PendingCheck.Begin(locationId, _itemType);   // own item: let the echo through while in the shop
+            }
+            // Cancelling AddItem also cancels the ritual it would have started, which freezes the player,
+            // so make sure some ritual still plays. Own item: wait for the echo. Other game's item: generic popup now.
+            else if (RitualPolicy.NeedsFullRitual(_itemType))
+            {
+                if (otherGame)
                     PendingCheck.ShowGeneric(__instance.m_playerComponent, _itemType,
                         placement.ItemName, "Item Sent", $"Sent to {placement.Player} ({placement.Game}).");
                 else
-                    PendingCheck.Begin(locationId, _itemType);   // own item, or no placement data: wait for the echo (3s fallback)
+                    PendingCheck.Begin(locationId, _itemType);
             }
 
-            // Order matters: Begin (above) must come before ReportCheck, so the echo can't arrive before we're waiting for it.
+            // Begin (above) must come before ReportCheck, so the echo can't arrive before we're waiting for it.
             ItemDelivery.ReportCheck(locationId);
 
             __result = _amount;   // report "added" to the caller even though nothing was
@@ -134,8 +149,7 @@ namespace TLCArchipelago_Client
     #region Delivery timing (GameFlow)
 
     // These four patches only exist to give ItemDelivery extra chances to run. PlayerTick_Patch below
-    // already ticks every frame, so they are candidates for removal. Re-test the Dash delivery and
-    // "send an item while paused" if you take them out.
+    // already ticks every frame, so they are candidates for removal.
     // Note ActiveGameFlowState_Patch is a postfix on a getter that ItemDelivery.IsSafe() also calls.
     [HarmonyPatch(typeof(GameFlow), "get_ActiveGameFlowState")]
     public class ActiveGameFlowState_Patch
@@ -209,6 +223,33 @@ namespace TLCArchipelago_Client
 
 
     #region Shop substitution (shelved)
+    public static class ShopTracker
+    {
+        public static string CurrentShopKey;   // set when a shop opens, kept until the next one opens
+    }
+
+    [HarmonyPatch(typeof(InteractiveElementLogic_ShopKeeper), "OpenShopMenu")]
+    public class ShopOpen_Patch
+    {
+        static void Postfix(InteractiveElementLogic_ShopKeeper __instance)
+        {
+            ShopTracker.CurrentShopKey = LocationTracker.BuildKey(__instance.m_Owner);  
+            ShopText.Arm(__instance);          
+        }
+    }
+    //[HarmonyPatch(typeof(PlayerInventorySubComponent), "OnBuyItem", new System.Type[] { typeof(ShopItemTrade) })]
+    public class ShopBuyKey_Patch
+    {
+        static void Prefix(ShopItemTrade _itemTrade)
+        {
+            var item = _itemTrade?.m_item?.m_itemId;
+            if (item == null) return;
+            var shopKey = ShopTracker.CurrentShopKey;   // set by the shopkeeper's trigger patch, if it fired
+            Plugin.BepinLogger.LogInfo($"SHOP BUY: shopKey='{shopKey}', item={item}");
+            if (shopKey != null)
+                LocationTracker.PendingLocationKey = shopKey.Split('#')[0] + "#" + item.Value;
+        }
+    }
 
     // Shelved: swapping the items a shopkeeper sells. Substituting the catalog in OpenShopMenu crashed
     // the game (mutating the shop UI data), and purchases still need handling (OnBuyItem).

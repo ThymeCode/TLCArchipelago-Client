@@ -40,8 +40,8 @@ namespace TLCArchipelago_Client
         public static bool TryGet(int locId, out string text)
         {
             text = null;
-            if (overrides.Count == 0 || Time.unscaledTime > expires) return false;
-            return overrides.TryGetValue(locId, out text);
+            if (overrides.Count > 0 && Time.unscaledTime <= expires && overrides.TryGetValue(locId, out text)) return true;
+            return ShopText.TryGet(locId, out text); 
         }
     }
 

@@ -10,6 +10,7 @@ using ArchipelagoBepin6Template.Unity.IL2Cpp.Utils;
 using TLCArchipelago_Client;
 using System.Threading.Tasks;
 using System.Collections;
+using System.Collections.ObjectModel;
 
 using Archipelago.MultiClient.Net.Models;   // for ItemInfo
 using System.Collections.Generic;
@@ -72,6 +73,7 @@ public class ArchipelagoClient
         session.Items.ItemReceived += OnItemReceived;
         session.Socket.ErrorReceived += OnSessionErrorReceived;
         session.Socket.SocketClosed += OnSessionSocketClosed;
+        session.Locations.CheckedLocationsUpdated += OnCheckedLocationsUpdated;
     }
 
     /// <summary>
@@ -191,6 +193,28 @@ public class ArchipelagoClient
             var it = batch[i];
             ItemDelivery.Enqueue(new PendingItem(it.ItemId, it.ItemName, it.Player.Name, firstIndex + i, it.LocationId));
         }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="newCheckedLocations"></param>
+    private void OnCheckedLocationsUpdated(ReadOnlyCollection<long> newCheckedLocations)
+    {
+        try
+        {
+            lock (checkLock)
+            {
+                foreach(var id in newCheckedLocations)
+                {
+                    if (!ServerData.CheckedLocations.Contains(id)){
+                        ServerData.CheckedLocations.Add(id);
+                    }
+                }
+                
+            }
+        }catch(Exception e) { Plugin.BepinLogger.LogError(e);}
+        
     }
     /// <summary>
     /// Records a location check and sends it to the server. Called by the AddItem/UnlockAbility

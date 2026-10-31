@@ -101,5 +101,20 @@ namespace TLCArchipelago_Client
             echoGranted = false;
             loggedState = false;
         }
-    }
+
+        public static void GenericShopRitual(PlayerComponent player, EItemType item, string title, string header, string desc)
+        {
+            try
+            {
+                var ritual = player.PlayerRitual;
+                bool started = ritual.InternalTryStartRitual(EPlayerRitual.GenericShopItem, item, 0f, false);
+                Plugin.BepinLogger.LogInfo($"Pending check: generic shop ritual started={started}");
+                var ri = ritual.StateInfo.m_currentRitualInformation;
+                var page = ri?.m_descriptionPageData?.TryCast<UI_DescriptionPageData>();
+                PopupText.Arm(page, title, header, desc, "");
+                PopupIcon.SwapPage(page,ApSprite.Get());
+            }
+            catch(System.Exception e){ Plugin.BepinLogger.LogError(e); }
+        }
+    }   
 }
