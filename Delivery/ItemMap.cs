@@ -29,8 +29,17 @@ namespace TLCArchipelago_Client
             { 3, new GrantInfo { Item = EItemType.QuestItem_CannonBall, Amount = 1 } }, // Cannonball
             { 4, new GrantInfo { Ability = EPlayerUnlockableAbility.AirDash, Amount = 1 } }, // Dash Ability
             { 5, new GrantInfo { Item = EItemType.Crystal, Amount = 1 } },   // filler; not in the current item pool
-            {6, new GrantInfo { Ability = EPlayerUnlockableAbility.Bow, Amount = 1} }, // Bow Ability
+            { 6, new GrantInfo { Ability = EPlayerUnlockableAbility.Bow, Amount = 1} }, // Bow Ability
+
         };
+            /* Commented out items from the shop. Will be re-added in the future, kept for reference.
+            { 7, new GrantInfo{ Item = EItemType.SeedOfKnowledge, Amount = 1}},
+            { 8, new GrantInfo { Item = EItemType.CollectorToken, Amount = 1}},
+            { 9, new GrantInfo { Item = EItemType.StoneOfKnowledge_Poison, Amount = 1} },
+            { 10, new GrantInfo { Item = EItemType.StoneOfKnowledge_Treasure, Amount = 1} },
+            { 11, new GrantInfo { Item = EItemType.StoneOfKnowledge_Safety, Amount = 1} },
+            { 12, new GrantInfo{Item = EItemType.GearUpgrade_PotionCount_PackShop1, Amount = 1}},
+            { 13, new GrantInfo{Item = EItemType.GearUpgrade_PotionHealingEffect_PackShop2, Amount = 1}},*/
 
         /// <summary>Looks up the grant for an AP item ID. Returns false if the ID isn't mapped.</summary>
         public static bool TryGet(long id, out GrantInfo info) => map.TryGetValue(id, out info);
