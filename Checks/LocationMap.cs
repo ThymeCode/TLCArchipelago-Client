@@ -20,6 +20,16 @@ namespace TLCArchipelago_Client
             {"TRG_HYR_AUT_CIN_Reward_Bow@(17.50, 5.00, 0.00)", 4},                        // Hyrkanian Bow Reward
         };
 
+        /*  Shelved shop locations. Will be brought back in the future, kept for reference.
+            {"NPC_ShopKeeper_Cartographer Old_Lady Variant@(161.72, 37.50, 2.00)#SeedOfKnowledge", 5},
+            {"NPC_ShopKeeper_Cartographer Old_Lady Variant@(161.72, 37.50, 2.00)#CollectorToken",6},
+            {"NPC_ShopKeeper_Cartographer Old_Lady Variant@(161.72, 37.50, 2.00)#StoneOfKnowledge_Poison", 7},
+            {"NPC_ShopKeeper_Cartographer Old_Lady Variant@(161.72, 37.50, 2.00)#StoneOfKnowledge_Treasure", 8},
+            {"NPC_ShopKeeper_Cartographer Old_Lady Variant@(161.72, 37.50, 2.00)#StoneOfKnowledge_Safety", 9},
+            {"NPC_ShopKeeper_Cartographer Old_Lady Variant@(161.72, 37.50, 2.00)#GearUpgrade_PotionCount_PackShop1",10},
+            {"NPC_ShopKeeper_Cartographer Old_Lady Variant@(161.72, 37.50, 2.00)#GearUpgrade_PotionHealingEffect_PackShop2", 11}
+        */
+
         /// <summary>
         /// Looks up the AP location ID for a key built by LocationTracker.BuildKey.
         /// Returns false for unmapped locations. Keys must match exactly, including the two decimal places.
